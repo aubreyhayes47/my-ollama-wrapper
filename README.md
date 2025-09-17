@@ -1,126 +1,101 @@
-# My Ollama Wrapper
+# Ollama Wrapper GUI
 
-A simple, elegant GUI for Ollama built with Electron and React, providing a cross-platform desktop interface for interacting with Ollama models.
+A simple GUI application for managing your local Ollama server. This application provides an easy-to-use interface for checking server status and controlling the Ollama service.
 
 ## Features
 
-- 🖥️ Cross-platform desktop application (Windows, macOS, Linux)
-- ⚡ Built with Electron and React for modern, responsive UI
-- 🎨 Clean, intuitive interface for Ollama interactions
-- 🔧 Easy setup and configuration
+- **Server Status Monitoring**: Real-time status checking with automatic refresh
+- **Server Controls**: Start, stop, and restart the Ollama server
+- **Model Information**: View available models and their details
+- **User-Friendly Interface**: Clean GUI with visual status indicators
+- **Cross-Platform**: Works on Windows, macOS, and Linux
 
-## Prerequisites
+## Requirements
 
-Before you begin, ensure you have the following installed:
-
-- [Node.js](https://nodejs.org/) (v16 or higher)
-- [npm](https://www.npmjs.com/) (comes with Node.js)
-- [Ollama](https://ollama.ai/) installed and running on your system
+- Python 3.6 or higher
+- Ollama installed on your system
+- Required Python packages (see requirements.txt)
 
 ## Installation
 
-1. **Clone the repository:**
+1. Clone this repository:
    ```bash
    git clone https://github.com/aubreyhayes47/my-ollama-wrapper.git
    cd my-ollama-wrapper
    ```
 
-2. **Install dependencies:**
+2. Install Python dependencies:
    ```bash
-   npm install
+   pip install -r requirements.txt
    ```
 
-## Development
+3. Make sure Ollama is installed on your system:
+   - Visit [Ollama's official website](https://ollama.ai) for installation instructions
 
-### Running in Development Mode
+## Usage
 
-To run the application in development mode with hot reload:
+### Running the Application
 
-```bash
-# Start the development server (this will start both React dev server and Electron)
-npm run electron-dev-start
-```
+You can start the application in several ways:
 
-Or run them separately:
-
-```bash
-# Terminal 1: Start the React development server
-npm start
-
-# Terminal 2: Start Electron (after React dev server is running)
-npm run electron-dev
-```
-
-### Building for Production
-
-1. **Build the React application:**
+1. **Using the main launcher**:
    ```bash
-   npm run build
+   python main.py
    ```
 
-2. **Run the production Electron app:**
+2. **Direct execution**:
    ```bash
-   npm run electron
+   python ollama_wrapper.py
    ```
 
-### Packaging for Distribution
+3. **Make executable** (Linux/macOS):
+   ```bash
+   chmod +x main.py
+   ./main.py
+   ```
 
-To create distributable packages for your platform:
+### Using the Interface
 
-```bash
-npm run electron-pack
-```
+1. **Server Status**: The application automatically checks the Ollama server status every 5 seconds
+2. **Manual Refresh**: Click the "Refresh" button to manually check server status
+3. **Server Controls**:
+   - **Start Server**: Attempts to start the Ollama service
+   - **Stop Server**: Stops the running Ollama service
+   - **Restart Server**: Stops and then starts the Ollama service
+4. **Auto-refresh**: Toggle automatic status monitoring on/off
 
-This will create platform-specific packages in the `dist-electron` directory.
+### Server Information
 
-## Project Structure
-
-```
-my-ollama-wrapper/
-├── src/
-│   ├── main/          # Electron main process
-│   │   └── main.js    # Main Electron process file
-│   └── renderer/      # React application
-│       ├── App.js     # Main React component
-│       ├── App.css    # Styles for main component
-│       ├── index.js   # React entry point
-│       └── index.css  # Global styles
-├── public/
-│   └── index.html     # HTML template
-├── dist/              # Built React application
-├── dist-electron/     # Electron distribution packages
-├── webpack.config.js  # Webpack configuration
-├── package.json       # Project configuration and dependencies
-└── README.md         # This file
-```
-
-## Available Scripts
-
-- `npm start` - Start React development server
-- `npm run build` - Build React app for production
-- `npm run electron` - Run Electron with built React app
-- `npm run electron-dev` - Run Electron in development mode
-- `npm run electron-dev-start` - Start both React dev server and Electron concurrently
-- `npm run electron-pack` - Package the app for distribution
+The application displays:
+- Current server status (Running/Stopped/Error)
+- Server host and port
+- Response time
+- Available models and their sizes
+- Last update timestamp
 
 ## Configuration
 
-The application is configured to work with Ollama running on the default port (11434). You can modify the configuration in the source files as needed.
+The application uses the default Ollama server address `http://localhost:11434`. This can be modified in the source code if needed.
+
+## Troubleshooting
+
+### Common Issues
+
+1. **"Ollama executable not found"**: Make sure Ollama is installed and in your system PATH
+2. **Connection refused**: Verify that Ollama is properly installed and the port 11434 is available
+3. **Permission denied**: On Linux/macOS, you may need to run with appropriate permissions for system service control
+
+### Server Control Commands
+
+The application attempts to use these commands for server control:
+- **Start**: `ollama serve`, `systemctl start ollama`
+- **Stop**: `pkill -f ollama`, `systemctl stop ollama`, `killall ollama`
+- **Restart**: Combination of stop and start commands
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Feel free to submit issues and enhancement requests!
 
 ## License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- [Electron](https://www.electronjs.org/) - Framework for building cross-platform desktop apps
-- [React](https://reactjs.org/) - JavaScript library for building user interfaces
-- [Ollama](https://ollama.ai/) - Run large language models locally
+This project is licensed under the Apache License 2.0 - see the LICENSE file for details.
