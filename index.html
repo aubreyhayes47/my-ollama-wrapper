@@ -88,28 +88,73 @@
                 <!-- Settings View -->
                 <div id="settings-view" class="view">
                     <header class="view-header">
-                        <h1>Settings</h1>
-                        <p>Configure your Ollama wrapper</p>
+                        <h1>Settings & Configuration</h1>
+                        <p>Configure your Ollama server and application preferences</p>
                     </header>
                     <div class="view-content">
-                        <div class="card">
-                            <h3>Configuration</h3>
-                            <p>Customize your Ollama wrapper settings and preferences.</p>
-                            <div class="settings-form">
+                        <form id="settings-form">
+                            <!-- Ollama Server Settings -->
+                            <section class="settings-section">
+                                <h3>Ollama Server Settings</h3>
+                                
                                 <div class="form-group">
-                                    <label>Server URL:</label>
-                                    <input type="text" placeholder="http://localhost:11434" disabled>
+                                    <label for="server-url">Server URL:</label>
+                                    <input type="url" id="server-url" name="serverUrl" placeholder="http://localhost:11434" required>
+                                    <span class="error-message" id="server-url-error"></span>
                                 </div>
+
                                 <div class="form-group">
-                                    <label>Theme:</label>
-                                    <select disabled>
-                                        <option>Dark</option>
-                                        <option>Light</option>
+                                    <label for="api-timeout">API Timeout (seconds):</label>
+                                    <input type="number" id="api-timeout" name="apiTimeout" min="1" max="300" value="30" required>
+                                    <span class="error-message" id="api-timeout-error"></span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="max-retries">Max Connection Retries:</label>
+                                    <input type="number" id="max-retries" name="maxRetries" min="0" max="10" value="3" required>
+                                    <span class="error-message" id="max-retries-error"></span>
+                                </div>
+                            </section>
+
+                            <!-- App Preferences -->
+                            <section class="settings-section">
+                                <h3>Application Preferences</h3>
+                                
+                                <div class="form-group">
+                                    <label for="theme">Theme:</label>
+                                    <select id="theme" name="theme" required>
+                                        <option value="light">Light</option>
+                                        <option value="dark">Dark</option>
+                                        <option value="auto">Auto (System)</option>
                                     </select>
                                 </div>
-                                <p><em>Settings functionality coming soon...</em></p>
+
+                                <div class="form-group">
+                                    <label for="auto-connect">
+                                        <input type="checkbox" id="auto-connect" name="autoConnect">
+                                        Auto-connect on startup
+                                    </label>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="save-logs">
+                                        <input type="checkbox" id="save-logs" name="saveLogs">
+                                        Save connection logs
+                                    </label>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="model-cache-size">Model Cache Size (MB):</label>
+                                    <input type="number" id="model-cache-size" name="modelCacheSize" min="100" max="10000" value="1000">
+                                    <span class="error-message" id="model-cache-size-error"></span>
+                                </div>
+                            </section>
+
+                            <div class="form-actions">
+                                <button type="button" id="reset-btn" class="btn btn-secondary">Reset to Defaults</button>
+                                <button type="submit" class="btn btn-primary">Save Settings</button>
                             </div>
-                        </div>
+                        </form>
                     </div>
                 </div>
 
@@ -128,7 +173,7 @@
                                     <strong>Version:</strong> 1.0.0
                                 </div>
                                 <div class="info-item">
-                                    <strong>Description:</strong> Just a simple GUI for Ollama
+                                    <strong>Description:</strong> Comprehensive GUI for Ollama with chat, model management, and advanced settings
                                 </div>
                                 <div class="info-item">
                                     <strong>License:</strong> Apache License 2.0
