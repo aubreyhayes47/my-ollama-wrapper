@@ -1,9 +1,29 @@
 {
   "name": "my-ollama-wrapper",
   "version": "1.0.0",
-  "description": "Just a simple GUI for Ollama",
+  "description": "A comprehensive GUI for managing your Ollama instance with chat functionality, model management, and advanced settings configuration",
   "main": "src/main/main.js",
   "homepage": "./",
+  "author": "aubreyhayes47",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aubreyhayes47/my-ollama-wrapper.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aubreyhayes47/my-ollama-wrapper/issues"
+  },
+  "keywords": [
+    "electron",
+    "react",
+    "ollama",
+    "gui",
+    "desktop",
+    "ai",
+    "chat",
+    "llm",
+    "local"
+  ],
   "scripts": {
     "electron": "electron . --no-sandbox",
     "electron-dev": "NODE_ENV=development electron . --no-sandbox",
@@ -11,17 +31,14 @@
     "build": "webpack --mode production",
     "electron-pack": "npm run build && electron-builder",
     "electron-dev-start": "concurrently \"npm start\" \"wait-on http://localhost:3000 && npm run electron-dev\"",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint src/ --ext .js,.jsx",
+    "lint:fix": "eslint src/ --ext .js,.jsx --fix",
+    "format": "prettier --write \"src/**/*.{js,jsx,css,json}\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,css,json}\"",
+    "type-check": "echo \"No TypeScript in this project\"",
+    "build:analyze": "webpack-bundle-analyzer dist/renderer/static/js/*.js"
   },
-  "keywords": [
-    "electron",
-    "react",
-    "ollama",
-    "gui",
-    "desktop"
-  ],
-  "author": "aubreyhayes47",
-  "license": "Apache-2.0",
   "build": {
     "appId": "com.aubreyhayes47.my-ollama-wrapper",
     "productName": "My Ollama Wrapper",
@@ -43,6 +60,10 @@
       "target": "AppImage"
     }
   },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "devDependencies": {
     "@babel/core": "^7.28.4",
     "@babel/preset-env": "^7.28.3",
@@ -57,10 +78,27 @@
     "wait-on": "^9.0.0",
     "webpack": "^5.101.3",
     "webpack-cli": "^6.0.1",
-    "webpack-dev-server": "^5.2.2"
+    "webpack-dev-server": "^5.2.2",
+    "eslint": "^8.55.0",
+    "eslint-plugin-react": "^7.33.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^3.1.0",
+    "webpack-bundle-analyzer": "^4.9.0"
   },
   "dependencies": {
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }
