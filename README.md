@@ -82,3 +82,4 @@ The application also provides REST API endpoints:
 - All destructive actions (like model deletion) require confirmation
 - Long-running operations (download, delete) run in background threads
 - The web interface provides real-time feedback for all operations
+\
