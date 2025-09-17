@@ -136,7 +136,7 @@ class OllamaWrapperApp {
     }
 
     isValidView(viewName) {
-        const validViews = ['models', 'server', 'settings', 'about'];
+        const validViews = ['models', 'server', 'chat', 'settings', 'about'];
         return validViews.includes(viewName);
     }
 
@@ -144,6 +144,7 @@ class OllamaWrapperApp {
         const titles = {
             'models': 'Models',
             'server': 'Server',
+            'chat': 'Chat',
             'settings': 'Settings',
             'about': 'About'
         };
@@ -160,6 +161,9 @@ class OllamaWrapperApp {
             case 'server':
                 this.initServerView();
                 break;
+            case 'chat':
+                this.initChatView();
+                break;
             case 'settings':
                 this.initSettingsView();
                 break;
@@ -172,7 +176,12 @@ class OllamaWrapperApp {
     initModelsView() {
         // Initialize models view functionality
         console.log('Models view initialized');
-        // TODO: Load and display available models
+        
+        // Set up model management
+        this.setupModelsManagement();
+        
+        // Load models from the server
+        this.loadModels();
     }
 
     initServerView() {
@@ -183,10 +192,25 @@ class OllamaWrapperApp {
 
     }
 
+    initChatView() {
+        // Initialize chat view functionality
+        console.log('Chat view initialized');
+        
+        // Set up chat functionality
+        this.setupChatFunctionality();
+        
+        // Load models for chat
+        this.loadChatModels();
+    }
+
     initSettingsView() {
         // Initialize settings view functionality
         console.log('Settings view initialized');
-        // TODO: Load and display current settings
+        
+        // Load current settings into the form
+        if (window.settingsManager) {
+            window.settingsManager.loadSettingsIntoForm();
+        }
     }
 
     initAboutView() {
@@ -367,6 +391,562 @@ class OllamaWrapperApp {
         }, 15000);
     }
 
+    // Model Management Methods
+    setupModelsManagement() {
+        // Set up event listeners for model management
+        const refreshBtn = document.getElementById('refresh-models-btn');
+        const downloadBtn = document.getElementById('download-model-btn');
+        const modal = document.getElementById('download-modal');
+        const closeModal = modal?.querySelector('.close');
+        const cancelBtn = document.getElementById('cancel-download-btn');
+        const confirmBtn = document.getElementById('confirm-download-btn');
+
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.loadModels());
+        }
+
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', () => this.showDownloadModal());
+        }
+
+        if (closeModal) {
+            closeModal.addEventListener('click', () => this.hideDownloadModal());
+        }
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => this.hideDownloadModal());
+        }
+
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => this.downloadModel());
+        }
+
+        // Close modal when clicking outside
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    this.hideDownloadModal();
+                }
+            });
+        }
+    }
+
+    async loadModels() {
+        const modelList = document.getElementById('model-list');
+        const serverUrl = window.settingsManager ? window.settingsManager.getSetting('serverUrl') : 'http://localhost:11434';
+        
+        if (!modelList) return;
+
+        // Show loading state
+        modelList.innerHTML = `
+            <div class="model-item loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Loading models...</span>
+            </div>
+        `;
+
+        try {
+            const response = await fetch(`${serverUrl}/api/tags`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            this.displayModels(data.models || []);
+            this.showStatus('Models loaded successfully', 'success');
+        } catch (error) {
+            console.error('Error loading models:', error);
+            this.displayModelsError(error.message);
+            this.showStatus('Failed to load models. Make sure Ollama is running.', 'error');
+        }
+    }
+
+    displayModels(models) {
+        const modelList = document.getElementById('model-list');
+        if (!modelList) return;
+
+        if (models.length === 0) {
+            modelList.innerHTML = `
+                <div class="model-item">
+                    <div class="model-info">
+                        <div class="model-name">No models found</div>
+                        <div class="model-details">
+                            <span>No models are currently installed. Use the Download Model button to install one.</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        modelList.innerHTML = models.map(model => `
+            <div class="model-item">
+                <div class="model-info">
+                    <div class="model-name">${model.name}</div>
+                    <div class="model-details">
+                        <span><i class="fas fa-hdd"></i> ${this.formatBytes(model.size)}</span>
+                        <span><i class="fas fa-calendar"></i> ${this.formatDate(model.modified_at)}</span>
+                        <span><i class="fas fa-tag"></i> ${model.details?.family || 'Unknown'}</span>
+                    </div>
+                </div>
+                <div class="model-actions">
+                    <button class="btn btn-secondary btn-small" onclick="window.ollamaApp.showModelInfo('${model.name}')">
+                        <i class="fas fa-info-circle"></i> Info
+                    </button>
+                    <button class="btn btn-danger btn-small" onclick="window.ollamaApp.deleteModel('${model.name}')">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    displayModelsError(errorMessage) {
+        const modelList = document.getElementById('model-list');
+        if (!modelList) return;
+
+        modelList.innerHTML = `
+            <div class="model-item">
+                <div class="model-info">
+                    <div class="model-name">Error Loading Models</div>
+                    <div class="model-details">
+                        <span>${errorMessage}</span>
+                    </div>
+                </div>
+                <div class="model-actions">
+                    <button class="btn btn-primary btn-small" onclick="window.ollamaApp.loadModels()">
+                        <i class="fas fa-sync-alt"></i> Retry
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    showDownloadModal() {
+        const modal = document.getElementById('download-modal');
+        const input = document.getElementById('model-name-input');
+        if (modal) {
+            modal.style.display = 'block';
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+        }
+    }
+
+    hideDownloadModal() {
+        const modal = document.getElementById('download-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    async downloadModel() {
+        const input = document.getElementById('model-name-input');
+        const modelName = input?.value.trim();
+        
+        if (!modelName) {
+            alert('Please enter a model name');
+            return;
+        }
+
+        this.hideDownloadModal();
+        this.showStatus(`Downloading model "${modelName}"...`, 'info');
+
+        const serverUrl = window.settingsManager ? window.settingsManager.getSetting('serverUrl') : 'http://localhost:11434';
+
+        try {
+            const response = await fetch(`${serverUrl}/api/pull`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: modelName })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            this.showStatus(`Model "${modelName}" downloaded successfully!`, 'success');
+            // Refresh the models list
+            setTimeout(() => this.loadModels(), 1000);
+        } catch (error) {
+            console.error('Error downloading model:', error);
+            this.showStatus(`Failed to download model "${modelName}": ${error.message}`, 'error');
+        }
+    }
+
+    async deleteModel(modelName) {
+        if (!confirm(`Are you sure you want to delete the model "${modelName}"?\n\nThis action cannot be undone.`)) {
+            return;
+        }
+
+        this.showStatus(`Deleting model "${modelName}"...`, 'info');
+
+        const serverUrl = window.settingsManager ? window.settingsManager.getSetting('serverUrl') : 'http://localhost:11434';
+
+        try {
+            const response = await fetch(`${serverUrl}/api/delete`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: modelName })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            this.showStatus(`Model "${modelName}" deleted successfully!`, 'success');
+            // Refresh the models list
+            this.loadModels();
+        } catch (error) {
+            console.error('Error deleting model:', error);
+            this.showStatus(`Failed to delete model "${modelName}": ${error.message}`, 'error');
+        }
+    }
+
+    async showModelInfo(modelName) {
+        const serverUrl = window.settingsManager ? window.settingsManager.getSetting('serverUrl') : 'http://localhost:11434';
+
+        try {
+            const response = await fetch(`${serverUrl}/api/show`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: modelName })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const info = JSON.stringify(data, null, 2);
+            
+            alert(`Model Information for "${modelName}":\n\n${info}`);
+        } catch (error) {
+            console.error('Error getting model info:', error);
+            alert(`Failed to get model information: ${error.message}`);
+        }
+    }
+
+    showStatus(message, type) {
+        const statusDiv = document.getElementById('model-status');
+        const messageDiv = document.getElementById('status-message');
+        
+        if (statusDiv && messageDiv) {
+            messageDiv.textContent = message;
+            statusDiv.className = `model-status ${type}`;
+            statusDiv.style.display = 'block';
+            
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+    }
+
+    formatBytes(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    formatDate(dateString) {
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        } catch {
+            return 'Unknown';
+        }
+    }
+
+    // Chat Management Methods
+    setupChatFunctionality() {
+        // Set up event listeners for chat
+        const modelSelect = document.getElementById('chat-model-select');
+        const refreshBtn = document.getElementById('refresh-chat-models');
+        const sendBtn = document.getElementById('send-chat-button');
+        const clearBtn = document.getElementById('clear-chat-history');
+        const promptInput = document.getElementById('chat-prompt-input');
+        const closeErrorBtn = document.getElementById('close-chat-error');
+
+        if (modelSelect) {
+            modelSelect.addEventListener('change', () => this.onChatModelChange());
+        }
+
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.loadChatModels());
+        }
+
+        if (sendBtn) {
+            sendBtn.addEventListener('click', () => this.sendChatMessage());
+        }
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => this.clearChatHistory());
+        }
+
+        if (promptInput) {
+            promptInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.sendChatMessage();
+                }
+            });
+        }
+
+        if (closeErrorBtn) {
+            closeErrorBtn.addEventListener('click', () => this.hideChatError());
+        }
+
+        // Initialize chat state
+        this.chatHistory = [];
+        this.selectedChatModel = '';
+        this.isChatLoading = false;
+    }
+
+    async loadChatModels() {
+        const modelSelect = document.getElementById('chat-model-select');
+        const serverUrl = window.settingsManager ? window.settingsManager.getSetting('serverUrl') : 'http://localhost:11434';
+        
+        if (!modelSelect) return;
+
+        // Show loading state
+        modelSelect.innerHTML = '<option value="">Loading models...</option>';
+        modelSelect.disabled = true;
+
+        try {
+            const response = await fetch(`${serverUrl}/api/tags`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            this.displayChatModels(data.models || []);
+        } catch (error) {
+            console.error('Error loading chat models:', error);
+            modelSelect.innerHTML = '<option value="">Error loading models</option>';
+            this.showChatError('Failed to load models. Make sure Ollama is running.');
+        } finally {
+            modelSelect.disabled = false;
+        }
+    }
+
+    displayChatModels(models) {
+        const modelSelect = document.getElementById('chat-model-select');
+        if (!modelSelect) return;
+
+        modelSelect.innerHTML = '<option value="">Select a model...</option>';
+        
+        if (models.length === 0) {
+            modelSelect.innerHTML = '<option value="">No models found</option>';
+            return;
+        }
+
+        models.forEach(model => {
+            const option = document.createElement('option');
+            option.value = model.name;
+            option.textContent = model.name;
+            modelSelect.appendChild(option);
+        });
+    }
+
+    onChatModelChange() {
+        const modelSelect = document.getElementById('chat-model-select');
+        const promptInput = document.getElementById('chat-prompt-input');
+        const sendBtn = document.getElementById('send-chat-button');
+        
+        this.selectedChatModel = modelSelect?.value || '';
+        
+        if (promptInput && sendBtn) {
+            const hasModel = this.selectedChatModel !== '';
+            promptInput.disabled = !hasModel;
+            sendBtn.disabled = !hasModel;
+            
+            if (hasModel) {
+                promptInput.placeholder = `Type your message for ${this.selectedChatModel}...`;
+            } else {
+                promptInput.placeholder = 'Select a model first...';
+            }
+        }
+    }
+
+    async sendChatMessage() {
+        const promptInput = document.getElementById('chat-prompt-input');
+        const prompt = promptInput?.value.trim();
+        
+        if (!prompt || !this.selectedChatModel || this.isChatLoading) {
+            return;
+        }
+
+        // Clear input and disable while processing
+        promptInput.value = '';
+        this.setButtonsDisabled(true);
+        this.isChatLoading = true;
+
+        // Add user message to chat
+        this.addChatMessage('user', prompt);
+        
+        // Add typing indicator
+        const typingId = this.addTypingIndicator();
+
+        const serverUrl = window.settingsManager ? window.settingsManager.getSetting('serverUrl') : 'http://localhost:11434';
+
+        try {
+            const response = await fetch(`${serverUrl}/api/generate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    model: this.selectedChatModel,
+                    prompt: prompt,
+                    stream: false
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            // Remove typing indicator
+            this.removeTypingIndicator(typingId);
+            
+            // Add assistant response
+            this.addChatMessage('assistant', data.response || 'No response received');
+            
+        } catch (error) {
+            console.error('Error sending chat message:', error);
+            this.removeTypingIndicator(typingId);
+            this.addChatMessage('error', `Error: ${error.message}`);
+            this.showChatError(`Failed to send message: ${error.message}`);
+        } finally {
+            this.isChatLoading = false;
+            this.setButtonsDisabled(false);
+        }
+    }
+
+    addChatMessage(role, content) {
+        const messagesContainer = document.getElementById('chat-messages');
+        if (!messagesContainer) return;
+
+        // Remove welcome message if it exists
+        const welcomeMessage = messagesContainer.querySelector('.welcome-message');
+        if (welcomeMessage) {
+            welcomeMessage.remove();
+        }
+
+        const messageElement = document.createElement('div');
+        messageElement.className = `message ${role}`;
+        
+        const contentElement = document.createElement('div');
+        contentElement.className = 'message-content';
+        contentElement.textContent = content;
+        
+        messageElement.appendChild(contentElement);
+        messagesContainer.appendChild(messageElement);
+        
+        // Scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        
+        // Store in history
+        this.chatHistory.push({ role, content });
+    }
+
+    addTypingIndicator() {
+        const messagesContainer = document.getElementById('chat-messages');
+        if (!messagesContainer) return null;
+
+        const typingElement = document.createElement('div');
+        const typingId = 'typing-' + Date.now();
+        typingElement.id = typingId;
+        typingElement.className = 'message assistant typing-indicator';
+        typingElement.innerHTML = `
+            <div class="message-content">
+                <span>Thinking</span>
+                <div class="dots">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+        `;
+        
+        messagesContainer.appendChild(typingElement);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        
+        return typingId;
+    }
+
+    removeTypingIndicator(typingId) {
+        if (typingId) {
+            const typingElement = document.getElementById(typingId);
+            if (typingElement) {
+                typingElement.remove();
+            }
+        }
+    }
+
+    clearChatHistory() {
+        if (this.chatHistory.length === 0) return;
+        
+        if (!confirm('Are you sure you want to clear the chat history?')) {
+            return;
+        }
+
+        const messagesContainer = document.getElementById('chat-messages');
+        if (messagesContainer) {
+            messagesContainer.innerHTML = `
+                <div class="welcome-message">
+                    <p>Welcome to the Ollama Chat Console! Select a model above and start chatting.</p>
+                </div>
+            `;
+        }
+        
+        this.chatHistory = [];
+    }
+
+    setButtonsDisabled(disabled) {
+        const sendBtn = document.getElementById('send-chat-button');
+        const promptInput = document.getElementById('chat-prompt-input');
+        
+        if (sendBtn) {
+            sendBtn.disabled = disabled;
+        }
+        
+        if (promptInput) {
+            promptInput.disabled = disabled || !this.selectedChatModel;
+        }
+    }
+
+    showChatError(message) {
+        const errorContainer = document.getElementById('chat-error-container');
+        const errorMessage = document.getElementById('chat-error-message');
+        
+        if (errorContainer && errorMessage) {
+            errorMessage.textContent = message;
+            errorContainer.style.display = 'flex';
+        }
+    }
+
+    hideChatError() {
+        const errorContainer = document.getElementById('chat-error-container');
+        if (errorContainer) {
+            errorContainer.style.display = 'none';
+        }
+    }
+
 }
 
 // Settings manager for configuration and preferences
@@ -508,6 +1088,11 @@ class SettingsManager {
             input.addEventListener('blur', () => this.validateField(input));
             input.addEventListener('input', () => this.clearError(input));
         });
+    }
+
+    // Load current settings into form (public interface)
+    loadSettingsIntoForm() {
+        this.populateSettingsForm();
     }
 
     // Populate settings form with current values
