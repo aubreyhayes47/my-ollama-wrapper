@@ -1,0 +1,66 @@
+{
+  "name": "my-ollama-wrapper",
+  "version": "1.0.0",
+  "description": "Just a simple GUI for Ollama",
+  "main": "src/main/main.js",
+  "homepage": "./",
+  "scripts": {
+    "electron": "electron . --no-sandbox",
+    "electron-dev": "NODE_ENV=development electron . --no-sandbox",
+    "start": "webpack serve --mode development",
+    "build": "webpack --mode production",
+    "electron-pack": "npm run build && electron-builder",
+    "electron-dev-start": "concurrently \"npm start\" \"wait-on http://localhost:3000 && npm run electron-dev\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "electron",
+    "react",
+    "ollama",
+    "gui",
+    "desktop"
+  ],
+  "author": "aubreyhayes47",
+  "license": "Apache-2.0",
+  "build": {
+    "appId": "com.aubreyhayes47.my-ollama-wrapper",
+    "productName": "My Ollama Wrapper",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "src/main/**/*",
+      "dist/renderer/**/*",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.4",
+    "@babel/preset-env": "^7.28.3",
+    "@babel/preset-react": "^7.27.1",
+    "babel-loader": "^10.0.0",
+    "concurrently": "^9.2.1",
+    "css-loader": "^7.1.2",
+    "electron": "^38.1.2",
+    "electron-builder": "^26.0.12",
+    "html-webpack-plugin": "^5.6.4",
+    "style-loader": "^4.0.0",
+    "wait-on": "^9.0.0",
+    "webpack": "^5.101.3",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.2"
+  },
+  "dependencies": {
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  }
+}
