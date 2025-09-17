@@ -114,21 +114,23 @@ class OllamaChatDemo {
     
     generateDemoResponse(prompt) {
         const responses = [
-            "That's an interesting question! In this demo mode, I can show you how the chat interface works. The real application would connect to your local Ollama instance to get actual AI responses.",
-            "This is a demonstration of the chat functionality. When connected to a real Ollama model, you would get actual AI-generated responses based on your prompts.",
-            "Great prompt! This demo shows how conversations flow in the interface. Each message gets timestamped and the chat history is maintained throughout your session.",
-            "I can see you're testing the chat interface. The real power comes when you connect this to Ollama running locally with models like Llama 2, Code Llama, or Mistral.",
-            "This demo response shows how the AI assistant would reply. The interface handles long conversations, maintains context, and provides a smooth chat experience."
+            "That's an interesting question! In this **demo mode**, I can show you how the chat interface works. The real application would connect to your local Ollama instance to get actual AI responses.\n\nKey features:\n- Markdown rendering\n- Code syntax highlighting\n- Real-time chat",
+            "This is a demonstration of the chat functionality. When connected to a real Ollama model, you would get actual AI-generated responses based on your prompts.\n\n> Note: This is just a demo - connect to real Ollama for actual AI responses!",
+            "Great prompt! This demo shows how conversations flow in the interface. Each message gets timestamped and the chat history is maintained throughout your session.\n\n### Chat Features:\n1. Real-time messaging\n2. **Markdown support**\n3. Code highlighting\n4. Message history",
+            "I can see you're testing the chat interface. The real power comes when you connect this to Ollama running locally with models like:\n\n- `llama2` - General conversation\n- `codellama` - Code assistance  \n- `mistral` - Fast responses\n- `llava` - Vision capabilities",
+            "This demo response shows how the AI assistant would reply. The interface handles long conversations, maintains context, and provides a smooth chat experience.\n\n```javascript\n// Example of code rendering\nconst chat = new OllamaChat();\nchat.sendMessage('Hello!');\n```"
         ];
         
         // Simple keyword-based responses for demo
         const lowerPrompt = prompt.toLowerCase();
         if (lowerPrompt.includes('hello') || lowerPrompt.includes('hi')) {
-            return "Hello! Welcome to the Ollama Wrapper demo. I'm showing you how the chat interface works!";
+            return "Hello! 👋 Welcome to the **Ollama Wrapper demo**. I'm showing you how the chat interface works!\n\n### Try asking about:\n- `code` or `programming`\n- `help` for instructions\n- Any other topic to see responses";
         } else if (lowerPrompt.includes('code') || lowerPrompt.includes('programming')) {
-            return "For coding questions, you'd want to use the CodeLlama model. This demo shows how different models can be selected from the dropdown above.";
+            return "For coding questions, you'd want to use the **CodeLlama** model. This demo shows how different models can be selected from the dropdown above.\n\n```python\n# Example: Python code with syntax highlighting\ndef greet(name):\n    return f\"Hello, {name}!\"\n\nprint(greet(\"Ollama User\"))\n```\n\n> **Tip**: The real CodeLlama model can help with debugging, explanations, and code generation!";
         } else if (lowerPrompt.includes('help')) {
-            return "This is a demo of the chat interface. In real usage:\n1. Select a model from the dropdown\n2. Type your prompt\n3. Press Enter or click Send\n4. View responses with timestamps\n5. Clear history when needed";
+            return "This is a demo of the chat interface. In real usage:\n\n### Steps to use:\n1. **Select a model** from the dropdown\n2. **Type your prompt** in the text area\n3. **Press Enter** or click Send\n4. **View responses** with timestamps\n5. **Clear history** when needed\n\n### Markdown Features:\n- **Bold** and *italic* text\n- `inline code` and code blocks\n- Lists and quotes\n- Headers and links";
+        } else if (lowerPrompt.includes('markdown') || lowerPrompt.includes('format')) {
+            return "Great question about **markdown support**! This interface automatically detects and renders markdown in AI responses.\n\n### Supported Elements:\n- **Bold text** with `**text**`\n- *Italic text* with `*text*`\n- `Inline code` with backticks\n- Code blocks with triple backticks\n- Headers with `#`\n- Lists (like this one!)\n- > Blockquotes\n- Links and more!\n\n```javascript\n// Code blocks get syntax highlighting\nfunction example() {\n    console.log('Markdown rendering works!');\n}\n```";
         }
         
         return responses[Math.floor(Math.random() * responses.length)];
@@ -152,7 +154,13 @@ class OllamaChatDemo {
         
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
-        contentDiv.textContent = message.content;
+        
+        // Use markdown rendering for assistant responses, plain text for user messages
+        if (message.role === 'assistant' && window.MarkdownUtils) {
+            contentDiv.innerHTML = window.MarkdownUtils.renderChatContent(message.content);
+        } else {
+            contentDiv.textContent = message.content;
+        }
         
         const timestampDiv = document.createElement('div');
         timestampDiv.className = 'message-timestamp';
