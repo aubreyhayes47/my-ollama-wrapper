@@ -11,6 +11,7 @@ A simple web-based GUI for managing local Ollama models with the ability to:
 """
 
 from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask_cors import CORS
 import requests
 import json
 import threading
@@ -102,6 +103,7 @@ def format_datetime(dt_str: str) -> str:
 # Flask app setup
 app = Flask(__name__)
 app.secret_key = 'ollama-manager-secret-key'
+CORS(app)  # Enable CORS for all domains on all routes
 api = OllamaAPI()
 
 
@@ -191,6 +193,236 @@ def api_info(model_name):
         return jsonify({'success': True, 'info': info})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/server/status')
+def api_server_status():
+    """API endpoint to get Ollama server status"""
+    try:
+        response = requests.get(f"{api.base_url}/api/tags", timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            return jsonify({
+                'success': True,
+                'status': 'running',
+                'models_count': len(data.get('models', [])),
+                'response_time': response.elapsed.total_seconds()
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'status': 'error',
+                'error': f'HTTP {response.status_code}'
+            })
+    except requests.exceptions.ConnectionError:
+        return jsonify({
+            'success': True,
+            'status': 'stopped',
+            'error': 'Connection refused'
+        })
+    except requests.exceptions.Timeout:
+        return jsonify({
+            'success': True,
+            'status': 'timeout',
+            'error': 'Request timed out'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+
+@app.route('/api/server/logs')
+def api_server_logs():
+    """API endpoint to get recent server logs"""
+    try:
+        # Get server status first
+        status_response = api_server_status()
+        status_data = status_response.get_json()
+        
+        logs = []
+        current_time = datetime.now().isoformat()
+        
+        if status_data.get('status') == 'running':
+            # Server is running - generate realistic logs based on current state
+            try:
+                models_response = requests.get(f"{api.base_url}/api/tags", timeout=5)
+                if models_response.status_code == 200:
+                    models_data = models_response.json()
+                    models = models_data.get('models', [])
+                    
+                    logs.extend([
+                        {
+                            'timestamp': current_time,
+                            'level': 'INFO',
+                            'message': f'Ollama server is running on {api.base_url}'
+                        },
+                        {
+                            'timestamp': current_time,
+                            'level': 'INFO',
+                            'message': f'Loaded {len(models)} models'
+                        }
+                    ])
+                    
+                    # Add logs for each model
+                    for model in models[:3]:  # Limit to 3 most recent
+                        logs.append({
+                            'timestamp': current_time,
+                            'level': 'SUCCESS',
+                            'message': f'Model {model.get("name", "unknown")} is available'
+                        })
+                        
+                    # Add API endpoint status
+                    logs.append({
+                        'timestamp': current_time,
+                        'level': 'INFO',
+                        'message': 'API endpoints responding normally'
+                    })
+                        
+            except Exception as e:
+                logs.append({
+                    'timestamp': current_time,
+                    'level': 'WARNING',
+                    'message': f'Error checking models: {str(e)}'
+                })
+        else:
+            # Server is not running
+            logs.append({
+                'timestamp': current_time,
+                'level': 'ERROR',
+                'message': f'Ollama server is not responding: {status_data.get("error", "Unknown error")}'
+            })
+            
+        return jsonify({
+            'success': True,
+            'logs': logs
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+
+@app.route('/api/server/errors')
+def api_server_errors():
+    """API endpoint to get recent server errors"""
+    try:
+        # Get server status first
+        status_response = api_server_status()
+        status_data = status_response.get_json()
+        
+        errors = []
+        current_time = datetime.now().isoformat()
+        
+        # Check for various error conditions
+        if status_data.get('status') == 'stopped':
+            errors.append({
+                'timestamp': current_time,
+                'level': 'critical',
+                'title': 'Server Not Running',
+                'error': 'Ollama server is not responding',
+                'stack': 'Connection refused to ' + api.base_url,
+                'suggestion': 'Start the Ollama server using "ollama serve" command'
+            })
+        elif status_data.get('status') == 'timeout':
+            errors.append({
+                'timestamp': current_time,
+                'level': 'error',
+                'title': 'Server Timeout',
+                'error': 'Server request timed out',
+                'stack': 'Request to ' + api.base_url + '/api/tags timed out',
+                'suggestion': 'Check server load and network connectivity'
+            })
+        elif status_data.get('status') == 'error':
+            errors.append({
+                'timestamp': current_time,
+                'level': 'error', 
+                'title': 'Server Error',
+                'error': status_data.get('error', 'Unknown server error'),
+                'stack': 'HTTP response from ' + api.base_url,
+                'suggestion': 'Check Ollama server logs for more details'
+            })
+        else:
+            # Server is running, check for other potential issues
+            response_time = status_data.get('response_time', 0)
+            if response_time > 2.0:
+                errors.append({
+                    'timestamp': current_time,
+                    'level': 'warning',
+                    'title': 'Slow Response Time',
+                    'error': f'API response time: {response_time:.2f}s (threshold: 2.0s)',
+                    'stack': 'API response measurement',
+                    'suggestion': 'Consider checking server load or using a smaller model'
+                })
+                
+        return jsonify({
+            'success': True,
+            'errors': errors
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+
+# Test endpoint to simulate a running server (for demonstration)
+@app.route('/api/server/test-running')
+def api_server_test_running():
+    """Test endpoint to demonstrate monitoring when server is running"""
+    current_time = datetime.now().isoformat()
+    
+    # Simulate running server logs
+    logs = [
+        {
+            'timestamp': current_time,
+            'level': 'INFO',
+            'message': 'Ollama server is running on http://localhost:11434'
+        },
+        {
+            'timestamp': current_time,
+            'level': 'INFO',
+            'message': 'Loaded 3 models'
+        },
+        {
+            'timestamp': current_time,
+            'level': 'SUCCESS',
+            'message': 'Model llama2:7b is available'
+        },
+        {
+            'timestamp': current_time,
+            'level': 'SUCCESS',
+            'message': 'Model mistral:7b is available'
+        },
+        {
+            'timestamp': current_time,
+            'level': 'INFO',
+            'message': 'API endpoints responding normally'
+        }
+    ]
+    
+    # When server is running, minimal errors (if any)
+    errors = [
+        {
+            'timestamp': current_time,
+            'level': 'warning',
+            'title': 'Model Memory Usage',
+            'error': 'Model llama2:7b using 4.2GB of memory',
+            'stack': 'Memory monitor check',
+            'suggestion': 'Monitor memory usage if running multiple models'
+        }
+    ]
+    
+    return jsonify({
+        'success': True,
+        'logs': logs,
+        'errors': errors,
+        'server_status': 'running'
+    })
 
 
 def create_templates():
