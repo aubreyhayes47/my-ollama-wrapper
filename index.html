@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ollama Wrapper</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Ollama Wrapper</h1>
+            <nav>
+                <button id="home-btn" class="nav-btn active">Home</button>
+                <button id="settings-btn" class="nav-btn">Settings</button>
+            </nav>
+        </header>
+
+        <main>
+            <!-- Home View -->
+            <div id="home-view" class="view active">
+                <div class="welcome">
+                    <h2>Welcome to Ollama Wrapper</h2>
+                    <p>A simple GUI for managing your Ollama instance.</p>
+                    <div class="status">
+                        <h3>Connection Status</h3>
+                        <div id="connection-status" class="status-indicator disconnected">
+                            <span class="status-dot"></span>
+                            <span class="status-text">Disconnected</span>
+                        </div>
+                        <button id="test-connection-btn" class="btn btn-primary">Test Connection</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings View -->
+            <div id="settings-view" class="view">
+                <div class="settings">
+                    <h2>Settings & Configuration</h2>
+                    
+                    <form id="settings-form">
+                        <!-- Ollama Server Settings -->
+                        <section class="settings-section">
+                            <h3>Ollama Server Settings</h3>
+                            
+                            <div class="form-group">
+                                <label for="server-url">Server URL:</label>
+                                <input type="url" id="server-url" name="serverUrl" placeholder="http://localhost:11434" required>
+                                <span class="error-message" id="server-url-error"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="api-timeout">API Timeout (seconds):</label>
+                                <input type="number" id="api-timeout" name="apiTimeout" min="1" max="300" value="30" required>
+                                <span class="error-message" id="api-timeout-error"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="max-retries">Max Connection Retries:</label>
+                                <input type="number" id="max-retries" name="maxRetries" min="0" max="10" value="3" required>
+                                <span class="error-message" id="max-retries-error"></span>
+                            </div>
+                        </section>
+
+                        <!-- App Preferences -->
+                        <section class="settings-section">
+                            <h3>Application Preferences</h3>
+                            
+                            <div class="form-group">
+                                <label for="theme">Theme:</label>
+                                <select id="theme" name="theme" required>
+                                    <option value="light">Light</option>
+                                    <option value="dark">Dark</option>
+                                    <option value="auto">Auto (System)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="auto-connect">
+                                    <input type="checkbox" id="auto-connect" name="autoConnect">
+                                    Auto-connect on startup
+                                </label>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="save-logs">
+                                    <input type="checkbox" id="save-logs" name="saveLogs">
+                                    Save connection logs
+                                </label>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="model-cache-size">Model Cache Size (MB):</label>
+                                <input type="number" id="model-cache-size" name="modelCacheSize" min="100" max="10000" value="1000">
+                                <span class="error-message" id="model-cache-size-error"></span>
+                            </div>
+                        </section>
+
+                        <div class="form-actions">
+                            <button type="button" id="reset-btn" class="btn btn-secondary">Reset to Defaults</button>
+                            <button type="submit" class="btn btn-primary">Save Settings</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
