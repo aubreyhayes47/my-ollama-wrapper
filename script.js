@@ -838,15 +838,16 @@ class OllamaWrapperApp {
         this.setButtonsDisabled(true);
         this.isChatLoading = true;
 
-        // Add user message to chat
+        // Add user message to chat and update history
         this.addChatMessage('user', prompt);
-        
+
         // Add typing indicator
         const typingId = this.addTypingIndicator();
 
         const serverUrl = window.settingsManager ? window.settingsManager.getSetting('serverUrl') : 'http://localhost:11434';
 
         try {
+            // Send the full chat history to the backend
             const response = await fetch(`${serverUrl}/api/generate`, {
                 method: 'POST',
                 headers: {
@@ -855,7 +856,8 @@ class OllamaWrapperApp {
                 body: JSON.stringify({
                     model: this.selectedChatModel,
                     prompt: prompt,
-                    stream: false
+                    stream: false,
+                    history: this.chatHistory // send the full conversation history
                 })
             });
 
@@ -864,13 +866,13 @@ class OllamaWrapperApp {
             }
 
             const data = await response.json();
-            
+
             // Remove typing indicator
             this.removeTypingIndicator(typingId);
-            
+
             // Add assistant response
             this.addChatMessage('assistant', data.response || 'No response received');
-            
+
         } catch (error) {
             console.error('Error sending chat message:', error);
             this.removeTypingIndicator(typingId);

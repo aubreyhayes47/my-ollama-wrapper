@@ -139,3 +139,6 @@ sessions/
 # Backup files
 *.bak
 *.backup
+
+# Virtual Environments
+venv/

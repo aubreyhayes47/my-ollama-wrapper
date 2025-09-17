@@ -1,3 +1,5 @@
+# === Chat Generation Endpoint ===
+
 #!/usr/bin/env python3
 """
 Ollama Model Manager Web GUI
@@ -105,6 +107,55 @@ app = Flask(__name__)
 app.secret_key = 'ollama-manager-secret-key'
 CORS(app)  # Enable CORS for all domains on all routes
 api = OllamaAPI()
+
+
+# === Chat Generation Endpoint ===
+@app.route('/api/generate', methods=['POST'])
+def api_generate():
+    """API endpoint to generate a chat response using conversation history"""
+    try:
+        data = request.get_json(force=True)
+        model = data.get('model')
+        prompt = data.get('prompt')
+        stream = data.get('stream', False)
+        history = data.get('history', [])
+        if not model or not prompt:
+            return jsonify({'success': False, 'error': 'Model and prompt are required'}), 400
+
+        # Build the full prompt from history
+        full_prompt = ''
+        for turn in history:
+            role = turn.get('role', 'user')
+            content = turn.get('content', '')
+            if role == 'user':
+                full_prompt += f"User: {content}\n"
+            elif role == 'assistant':
+                full_prompt += f"Assistant: {content}\n"
+            else:
+                full_prompt += f"{role.capitalize()}: {content}\n"
+        full_prompt += f"User: {prompt}\nAssistant: "
+
+        # Call Ollama API to generate a response
+        try:
+            response = requests.post(
+                f"{api.base_url}/api/generate",
+                json={
+                    "model": model,
+                    "prompt": full_prompt,
+                    "stream": stream
+                },
+                timeout=60
+            )
+            response.raise_for_status()
+            data = response.json()
+            return jsonify({
+                'success': True,
+                'response': data.get('response', '')
+            })
+        except requests.RequestException as e:
+            return jsonify({'success': False, 'error': f'Failed to generate response: {e}'}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/')
