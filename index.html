@@ -28,6 +28,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="#" class="nav-link" data-view="chat">
+                        <i class="fas fa-comments"></i>
+                        <span>Chat</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="#" class="nav-link" data-view="settings">
                         <i class="fas fa-cog"></i>
                         <span>Settings</span>
@@ -53,12 +59,41 @@
                     </header>
                     <div class="view-content">
                         <div class="card">
-                            <h3>Available Models</h3>
-                            <p>Here you can view and manage your installed Ollama models.</p>
-                            <div class="model-list">
-                                <div class="model-item">
-                                    <i class="fas fa-cube"></i>
-                                    <span>Model management functionality coming soon...</span>
+                            <div class="models-header">
+                                <h3>Available Models</h3>
+                                <div class="models-controls">
+                                    <button id="refresh-models-btn" class="btn btn-primary">
+                                        <i class="fas fa-sync-alt"></i> Refresh
+                                    </button>
+                                    <button id="download-model-btn" class="btn btn-success">
+                                        <i class="fas fa-download"></i> Download Model
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="model-status" id="model-status" style="display: none;">
+                                <div class="status-message" id="status-message"></div>
+                            </div>
+                            <div class="model-list" id="model-list">
+                                <div class="model-item loading">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <span>Loading models...</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Download Model Modal -->
+                        <div id="download-modal" class="modal" style="display: none;">
+                            <div class="modal-content">
+                                <span class="close">&times;</span>
+                                <h3>Download Model</h3>
+                                <div class="form-group">
+                                    <label for="model-name-input">Model Name:</label>
+                                    <input type="text" id="model-name-input" placeholder="e.g., llama2, codellama, mistral">
+                                    <small>Enter the name of the model you want to download</small>
+                                </div>
+                                <div class="modal-actions">
+                                    <button id="cancel-download-btn" class="btn btn-secondary">Cancel</button>
+                                    <button id="confirm-download-btn" class="btn btn-primary">Download</button>
                                 </div>
                             </div>
                         </div>
@@ -273,6 +308,55 @@
                                     </div>
 
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat View -->
+                <div id="chat-view" class="view">
+                    <header class="view-header">
+                        <h1>Chat Console</h1>
+                        <p>Interactive chat with your Ollama models</p>
+                    </header>
+                    <div class="view-content">
+                        <div class="chat-container">
+                            <div class="model-selection-chat">
+                                <label for="chat-model-select">Select Model:</label>
+                                <select id="chat-model-select">
+                                    <option value="">Loading models...</option>
+                                </select>
+                                <button id="refresh-chat-models" class="btn btn-secondary btn-small">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                            </div>
+
+                            <div class="chat-messages" id="chat-messages">
+                                <div class="welcome-message">
+                                    <p>Welcome to the Ollama Chat Console! Select a model above and start chatting.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="chat-input-container">
+                                <textarea 
+                                    id="chat-prompt-input" 
+                                    placeholder="Type your prompt here..." 
+                                    rows="3"
+                                    disabled
+                                ></textarea>
+                                <div class="chat-actions">
+                                    <button id="send-chat-button" class="btn btn-primary" disabled>
+                                        <i class="fas fa-paper-plane"></i> Send
+                                    </button>
+                                    <button id="clear-chat-history" class="btn btn-secondary">
+                                        <i class="fas fa-trash"></i> Clear History
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="chat-error-container" id="chat-error-container" style="display: none;">
+                                <div class="error-message" id="chat-error-message"></div>
+                                <button id="close-chat-error" class="btn btn-secondary btn-small">×</button>
                             </div>
                         </div>
                     </div>
