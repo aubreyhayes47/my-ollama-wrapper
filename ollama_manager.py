@@ -370,6 +370,61 @@ def api_server_errors():
         })
 
 
+# Test endpoint to simulate a running server (for demonstration)
+@app.route('/api/server/test-running')
+def api_server_test_running():
+    """Test endpoint to demonstrate monitoring when server is running"""
+    current_time = datetime.now().isoformat()
+    
+    # Simulate running server logs
+    logs = [
+        {
+            'timestamp': current_time,
+            'level': 'INFO',
+            'message': 'Ollama server is running on http://localhost:11434'
+        },
+        {
+            'timestamp': current_time,
+            'level': 'INFO',
+            'message': 'Loaded 3 models'
+        },
+        {
+            'timestamp': current_time,
+            'level': 'SUCCESS',
+            'message': 'Model llama2:7b is available'
+        },
+        {
+            'timestamp': current_time,
+            'level': 'SUCCESS',
+            'message': 'Model mistral:7b is available'
+        },
+        {
+            'timestamp': current_time,
+            'level': 'INFO',
+            'message': 'API endpoints responding normally'
+        }
+    ]
+    
+    # When server is running, minimal errors (if any)
+    errors = [
+        {
+            'timestamp': current_time,
+            'level': 'warning',
+            'title': 'Model Memory Usage',
+            'error': 'Model llama2:7b using 4.2GB of memory',
+            'stack': 'Memory monitor check',
+            'suggestion': 'Monitor memory usage if running multiple models'
+        }
+    ]
+    
+    return jsonify({
+        'success': True,
+        'logs': logs,
+        'errors': errors,
+        'server_status': 'running'
+    })
+
+
 def create_templates():
     """Create the HTML templates directory and files"""
     templates_dir = "templates"
