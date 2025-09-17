@@ -177,8 +177,10 @@ class OllamaWrapperApp {
 
     initServerView() {
         // Initialize server view functionality
-        console.log('Server view initialized');
-        // TODO: Check server status and display metrics
+        console.log('Server view initialized');        
+        // Initialize monitoring functionality
+        this.initServerMonitoring();
+
     }
 
     initSettingsView() {
@@ -192,6 +194,179 @@ class OllamaWrapperApp {
         console.log('About view initialized');
         // TODO: Load version info and other details
     }
+
+    // Initialize server monitoring functionality
+    initServerMonitoring() {
+        // Set up server monitoring components
+        this.setupServerMonitoring();
+        this.initializeMockData();
+        this.simulateRealTimeUpdates();
+    }
+
+    // Set up server monitoring event handlers and state
+    setupServerMonitoring() {
+        // Initialize global monitoring state if not already set
+        if (!window.monitoringState) {
+            window.monitoringState = {
+                autoRefreshInterval: null,
+                errorFilter: 'all',
+                mockLogs: [],
+                mockErrors: []
+            };
+        }
+    }
+
+    // Initialize mock data for demonstration
+    initializeMockData() {
+        if (window.monitoringState.mockLogs.length === 0) {
+            window.monitoringState.mockLogs = [
+                { timestamp: new Date().toISOString(), level: 'INFO', message: 'Ollama server starting...' },
+                { timestamp: new Date(Date.now() - 1000).toISOString(), level: 'INFO', message: 'Server listening on port 11434' },
+                { timestamp: new Date(Date.now() - 2000).toISOString(), level: 'INFO', message: 'Model loading: llama2' },
+                { timestamp: new Date(Date.now() - 5000).toISOString(), level: 'SUCCESS', message: 'Model llama2 loaded successfully' },
+                { timestamp: new Date(Date.now() - 10000).toISOString(), level: 'INFO', message: 'API endpoint ready' }
+            ];
+        }
+
+        if (window.monitoringState.mockErrors.length === 0) {
+            window.monitoringState.mockErrors = [
+                {
+                    timestamp: new Date(Date.now() - 300000).toISOString(),
+                    level: 'critical',
+                    title: 'Model loading failed',
+                    error: 'Failed to load model \'llama2\': insufficient memory',
+                    stack: 'ModelLoader.load() at line 45',
+                    suggestion: 'Free up system memory or use a smaller model'
+                },
+                {
+                    timestamp: new Date(Date.now() - 180000).toISOString(),
+                    level: 'warning',
+                    title: 'High memory usage',
+                    error: 'Memory usage at 85% of available RAM',
+                    stack: 'Current usage: 6.8GB / 8GB',
+                    suggestion: 'Consider closing other applications or using a smaller model'
+                }
+            ];
+        }
+
+        // Initial display
+        this.displayLogs();
+        this.displayErrors();
+    }
+
+    // Display logs in the UI
+    displayLogs() {
+        const logsContainer = document.getElementById('serverLogs');
+        if (!logsContainer) return;
+
+        logsContainer.innerHTML = '';
+        
+        window.monitoringState.mockLogs.forEach(log => {
+            const logEntry = this.createLogEntry(log);
+            logsContainer.appendChild(logEntry);
+        });
+        
+        logsContainer.scrollTop = 0;
+    }
+
+    // Create a log entry element
+    createLogEntry(log) {
+        const entry = document.createElement('div');
+        entry.className = `log-entry ${log.level.toLowerCase()}`;
+        
+        const timestamp = new Date(log.timestamp);
+        const formattedTime = timestamp.toISOString().replace('T', ' ').substring(0, 19);
+        
+        entry.innerHTML = `
+            <span class="timestamp">[${formattedTime}]</span>
+            <span class="level">${log.level}</span>
+            <span class="message">${log.message}</span>
+        `;
+        
+        return entry;
+    }
+
+    // Display errors in the UI
+    displayErrors() {
+        const errorContainer = document.getElementById('errorList');
+        if (!errorContainer) return;
+
+        errorContainer.innerHTML = '';
+        
+        const filteredErrors = window.monitoringState.errorFilter === 'all' 
+            ? window.monitoringState.mockErrors 
+            : window.monitoringState.mockErrors.filter(error => error.level === window.monitoringState.errorFilter);
+        
+        if (filteredErrors.length === 0) {
+            errorContainer.innerHTML = '<div style="text-align: center; color: #a0aec0; padding: 40px;">No errors matching the current filter</div>';
+            return;
+        }
+        
+        filteredErrors.forEach(error => {
+            const errorEntry = this.createErrorEntry(error);
+            errorContainer.appendChild(errorEntry);
+        });
+    }
+
+    // Create an error entry element
+    createErrorEntry(error) {
+        const entry = document.createElement('div');
+        entry.className = `error-entry ${error.level}`;
+        
+        const timestamp = new Date(error.timestamp);
+        const formattedTime = timestamp.toISOString().replace('T', ' ').substring(0, 19);
+        
+        entry.innerHTML = `
+            <div class="error-header">
+                <span class="timestamp">[${formattedTime}]</span>
+                <span class="level ${error.level}">${error.level.toUpperCase()}</span>
+                <span class="error-title">${error.title}</span>
+            </div>
+            <div class="error-details">
+                <p><strong>Error:</strong> ${error.error}</p>
+                <p><strong>Stack:</strong> ${error.stack}</p>
+                <p><strong>Suggestion:</strong> ${error.suggestion}</p>
+            </div>
+        `;
+        
+        return entry;
+    }
+
+    // Simulate real-time updates
+    simulateRealTimeUpdates() {
+        // Add a new log entry every 15-30 seconds
+        setInterval(() => {
+            if (Math.random() < 0.3) { // 30% chance
+                const messages = [
+                    'Heartbeat check completed',
+                    'Model cache updated',
+                    'Background maintenance completed',
+                    'Client connection established',
+                    'Request processed successfully'
+                ];
+                
+                const newLog = {
+                    timestamp: new Date().toISOString(),
+                    level: ['INFO', 'SUCCESS'][Math.floor(Math.random() * 2)],
+                    message: messages[Math.floor(Math.random() * messages.length)]
+                };
+                
+                window.monitoringState.mockLogs.unshift(newLog);
+                if (window.monitoringState.mockLogs.length > 50) {
+                    window.monitoringState.mockLogs.splice(50);
+                }
+                
+                // Only update display if we're on the server tab and auto-refresh is off
+                const serverView = document.getElementById('server-view');
+                const autoRefreshEnabled = document.getElementById('autoRefresh')?.checked;
+                
+                if (serverView?.classList.contains('active') && !autoRefreshEnabled) {
+                    this.displayLogs();
+                }
+            }
+        }, 15000);
+    }
+
 }
 
 // Settings manager for configuration and preferences
@@ -567,32 +742,172 @@ const Utils = {
         const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-    },
-
-    // Format timestamps
-    formatTime(timestamp) {
-        return new Date(timestamp).toLocaleString();
-    },
-
-    // Show toast notifications (for future use)
-    showToast(message, type = 'info') {
-        console.log(`[${type.toUpperCase()}] ${message}`);
-        // TODO: Implement actual toast notifications
-    },
-
-    // Debounce function for search and other inputs
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
     }
 };
+
+// Global functions for monitoring (needed for onclick handlers)
+function openServerTab(evt, tabName) {
+    // Hide all tab content
+    const tabContent = document.getElementsByClassName('server-tab-content');
+    for (let i = 0; i < tabContent.length; i++) {
+        tabContent[i].classList.remove('active');
+    }
+
+    // Remove active class from all tab buttons
+    const tabButtons = document.getElementsByClassName('server-tab-button');
+    for (let i = 0; i < tabButtons.length; i++) {
+        tabButtons[i].classList.remove('active');
+    }
+
+    // Show the selected tab content and mark button as active
+    document.getElementById(tabName).classList.add('active');
+    evt.currentTarget.classList.add('active');
+}
+
+function refreshLogs() {
+    if (!window.monitoringState) return;
+    
+    // Simulate fetching new logs
+    const newLog = {
+        timestamp: new Date().toISOString(),
+        level: ['INFO', 'SUCCESS', 'WARNING'][Math.floor(Math.random() * 3)],
+        message: [
+            'Processing request from client',
+            'Model inference completed',
+            'Cache cleared successfully',
+            'New connection established',
+            'Background task completed'
+        ][Math.floor(Math.random() * 5)]
+    };
+    
+    window.monitoringState.mockLogs.unshift(newLog);
+    
+    // Keep only last 50 logs
+    if (window.monitoringState.mockLogs.length > 50) {
+        window.monitoringState.mockLogs.splice(50);
+    }
+    
+    window.ollamaApp.displayLogs();
+    
+    // Show refresh feedback
+    const refreshBtn = event.target;
+    const originalText = refreshBtn.textContent;
+    refreshBtn.textContent = 'Refreshed!';
+    refreshBtn.style.background = '#38a169';
+    setTimeout(() => {
+        refreshBtn.textContent = originalText;
+        refreshBtn.style.background = '';
+    }, 1000);
+}
+
+function clearLogs() {
+    if (confirm('Are you sure you want to clear all logs?')) {
+        const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+        document.getElementById('serverLogs').innerHTML = `
+            <div class="log-entry info">
+                <span class="timestamp">[${now}]</span>
+                <span class="level">INFO</span>
+                <span class="message">Logs cleared</span>
+            </div>
+        `;
+    }
+}
+
+function toggleAutoRefresh() {
+    if (!window.monitoringState) return;
+    
+    const checkbox = document.getElementById('autoRefresh');
+    
+    if (checkbox.checked) {
+        window.monitoringState.autoRefreshInterval = setInterval(refreshLogs, 5000); // Refresh every 5 seconds
+        console.log('Auto-refresh enabled');
+    } else {
+        if (window.monitoringState.autoRefreshInterval) {
+            clearInterval(window.monitoringState.autoRefreshInterval);
+            window.monitoringState.autoRefreshInterval = null;
+        }
+        console.log('Auto-refresh disabled');
+    }
+}
+
+function refreshErrors() {
+    if (!window.monitoringState) return;
+    
+    // Simulate checking for new errors
+    const possibleNewErrors = [
+        {
+            timestamp: new Date().toISOString(),
+            level: 'warning',
+            title: 'Slow response time',
+            error: 'API response time exceeded 5 seconds',
+            stack: 'ResponseHandler.process() at line 89',
+            suggestion: 'Check server load and consider using a smaller model'
+        },
+        {
+            timestamp: new Date().toISOString(),
+            level: 'error',
+            title: 'Rate limit exceeded',
+            error: 'Too many requests in the last minute',
+            stack: 'RateLimiter.check() at line 23',
+            suggestion: 'Reduce request frequency or increase rate limits'
+        }
+    ];
+    
+    // Randomly add a new error (30% chance)
+    if (Math.random() < 0.3) {
+        const newError = possibleNewErrors[Math.floor(Math.random() * possibleNewErrors.length)];
+        window.monitoringState.mockErrors.unshift(newError);
+        
+        // Keep only last 20 errors
+        if (window.monitoringState.mockErrors.length > 20) {
+            window.monitoringState.mockErrors.splice(20);
+        }
+    }
+    
+    window.ollamaApp.displayErrors();
+    
+    // Show refresh feedback
+    const refreshBtn = event.target;
+    const originalText = refreshBtn.textContent;
+    refreshBtn.textContent = 'Refreshed!';
+    refreshBtn.style.background = '#38a169';
+    setTimeout(() => {
+        refreshBtn.textContent = originalText;
+        refreshBtn.style.background = '';
+    }, 1000);
+}
+
+function clearErrors() {
+    if (confirm('Are you sure you want to clear all errors?')) {
+        window.monitoringState.mockErrors.length = 0;
+        document.getElementById('errorList').innerHTML = '<div style="text-align: center; color: #a0aec0; padding: 40px;">No errors to display</div>';
+    }
+}
+
+function filterErrors() {
+    if (!window.monitoringState) return;
+    
+    const filterValue = document.getElementById('errorFilter').value;
+    window.monitoringState.errorFilter = filterValue;
+    window.ollamaApp.displayErrors();
+}
+
+// Utility functions for potential API integration
+function formatLogLevel(level) {
+    const levelMap = {
+        'debug': 'DEBUG',
+        'info': 'INFO',
+        'warn': 'WARNING',
+        'error': 'ERROR',
+        'fatal': 'CRITICAL'
+    };
+    return levelMap[level.toLowerCase()] || level.toUpperCase();
+}
+
+function formatTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    return date.toISOString().replace('T', ' ').substring(0, 19);
+}
 
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {

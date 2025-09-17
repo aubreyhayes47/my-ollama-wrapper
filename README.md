@@ -19,6 +19,13 @@ A comprehensive GUI for managing your Ollama instance with chat functionality, m
 - **Delete Models**: Remove models with confirmation dialogs
 - **Model Information**: View detailed metadata including modelfile and parameters
 
+### 🖥️ Server Monitoring & Troubleshooting
+- **Server Logs**: Real-time monitoring of Ollama server logs with filtering and auto-refresh
+- **Error Monitor**: Comprehensive error tracking with severity levels (Critical, Error, Warning)
+- **Troubleshooting Guide**: Built-in documentation for common issues and solutions
+- **System Requirements**: Hardware and software requirement guidelines
+- **Useful Commands**: Quick reference for Ollama commands and diagnostics
+
 ### ⚙️ Settings & Configuration
 - **Ollama Server Settings**
   - Configurable server URL (supports any Ollama instance)
@@ -76,7 +83,8 @@ cd my-ollama-wrapper
 
 3. Navigate through the sidebar:
    - **Models**: View and manage your installed models
-   - **Server**: Monitor server status and connection
+   - **Server**: Monitor server logs, errors, and get troubleshooting guidance
+
    - **Settings**: Configure server settings and app preferences
    - **About**: View application information
 
@@ -112,9 +120,13 @@ cd my-ollama-wrapper
 - **Reset to Defaults**: Restore original configuration
 
 ### Server View
-- Real-time connection status monitoring
-- Server health checks and diagnostics
-- Connection testing with detailed feedback
+- **Server Logs**: Real-time log monitoring with color-coded levels and auto-refresh
+- **Error Monitor**: Comprehensive error tracking with filtering by severity
+- **Troubleshooting Guide**: Built-in documentation for common Ollama issues
+- **Interactive Controls**: Refresh, clear, and filter functionality
+- **System Requirements**: Hardware and software specifications
+- **Command Reference**: Quick access to useful Ollama commands
+
 
 ## API Endpoints (Flask App)
 
