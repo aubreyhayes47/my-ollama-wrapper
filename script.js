@@ -1,19 +1,213 @@
-// Default settings configuration
-const DEFAULT_SETTINGS = {
-    serverUrl: 'http://localhost:11434',
-    apiTimeout: 30,
-    maxRetries: 3,
-    theme: 'light',
-    autoConnect: false,
-    saveLogs: false,
-    modelCacheSize: 1000
-};
+// Navigation and routing functionality
+class OllamaWrapperApp {
+    constructor() {
+        this.currentView = 'models';
+        this.init();
+    }
 
-// Settings manager class
+    init() {
+        this.setupEventListeners();
+        this.setupMobileMenu();
+        this.showView(this.currentView);
+    }
+
+    setupEventListeners() {
+        // Navigation click handlers
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const viewName = link.getAttribute('data-view');
+                this.navigateToView(viewName);
+            });
+        });
+
+        // Handle browser back/forward
+        window.addEventListener('popstate', (e) => {
+            const state = e.state;
+            if (state && state.view) {
+                this.showView(state.view, false);
+            }
+        });
+
+        // Handle initial page load with hash
+        window.addEventListener('load', () => {
+            const hash = window.location.hash.substring(1);
+            if (hash && this.isValidView(hash)) {
+                this.navigateToView(hash);
+            }
+        });
+    }
+
+    setupMobileMenu() {
+        // Create mobile menu button if it doesn't exist
+        if (!document.querySelector('.mobile-menu-btn')) {
+            const menuBtn = document.createElement('button');
+            menuBtn.className = 'mobile-menu-btn';
+            menuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+            document.body.appendChild(menuBtn);
+
+            // Toggle sidebar on mobile
+            menuBtn.addEventListener('click', () => {
+                const sidebar = document.querySelector('.sidebar');
+                sidebar.classList.toggle('open');
+            });
+
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', (e) => {
+                const sidebar = document.querySelector('.sidebar');
+                const menuBtn = document.querySelector('.mobile-menu-btn');
+                
+                if (window.innerWidth <= 768 && 
+                    !sidebar.contains(e.target) && 
+                    !menuBtn.contains(e.target) &&
+                    sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                }
+            });
+        }
+    }
+
+    navigateToView(viewName) {
+        if (!this.isValidView(viewName)) {
+            console.warn(`Invalid view: ${viewName}`);
+            return;
+        }
+
+        this.showView(viewName);
+        this.updateURL(viewName);
+        this.closeMobileSidebar();
+    }
+
+    showView(viewName, updateHistory = true) {
+        // Hide all views
+        const allViews = document.querySelectorAll('.view');
+        allViews.forEach(view => {
+            view.classList.remove('active');
+        });
+
+        // Show selected view
+        const targetView = document.getElementById(`${viewName}-view`);
+        if (targetView) {
+            targetView.classList.add('active');
+        }
+
+        // Update navigation active state
+        this.updateActiveNav(viewName);
+
+        // Update current view
+        this.currentView = viewName;
+
+        // Update browser history
+        if (updateHistory) {
+            const state = { view: viewName };
+            const title = this.getViewTitle(viewName);
+            history.pushState(state, title, `#${viewName}`);
+            document.title = `${title} - Ollama Wrapper`;
+        }
+
+        // Trigger view-specific initialization if needed
+        this.initializeView(viewName);
+    }
+
+    updateActiveNav(viewName) {
+        // Remove active class from all nav links
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+        });
+
+        // Add active class to current nav link
+        const activeLink = document.querySelector(`[data-view="${viewName}"]`);
+        if (activeLink) {
+            activeLink.classList.add('active');
+        }
+    }
+
+    updateURL(viewName) {
+        window.location.hash = viewName;
+    }
+
+    closeMobileSidebar() {
+        if (window.innerWidth <= 768) {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.remove('open');
+        }
+    }
+
+    isValidView(viewName) {
+        const validViews = ['models', 'server', 'settings', 'about'];
+        return validViews.includes(viewName);
+    }
+
+    getViewTitle(viewName) {
+        const titles = {
+            'models': 'Models',
+            'server': 'Server',
+            'settings': 'Settings',
+            'about': 'About'
+        };
+        return titles[viewName] || 'Ollama Wrapper';
+    }
+
+    initializeView(viewName) {
+        // This method can be extended to initialize specific functionality
+        // for each view when it becomes active
+        switch (viewName) {
+            case 'models':
+                this.initModelsView();
+                break;
+            case 'server':
+                this.initServerView();
+                break;
+            case 'settings':
+                this.initSettingsView();
+                break;
+            case 'about':
+                this.initAboutView();
+                break;
+        }
+    }
+
+    initModelsView() {
+        // Initialize models view functionality
+        console.log('Models view initialized');
+        // TODO: Load and display available models
+    }
+
+    initServerView() {
+        // Initialize server view functionality
+        console.log('Server view initialized');
+        // TODO: Check server status and display metrics
+    }
+
+    initSettingsView() {
+        // Initialize settings view functionality
+        console.log('Settings view initialized');
+        // TODO: Load and display current settings
+    }
+
+    initAboutView() {
+        // Initialize about view functionality
+        console.log('About view initialized');
+        // TODO: Load version info and other details
+    }
+}
+
+// Settings manager for configuration and preferences
 class SettingsManager {
     constructor() {
+        this.defaultSettings = {
+            serverUrl: 'http://localhost:11434',
+            apiTimeout: 30,
+            maxRetries: 3,
+            theme: 'light',
+            autoConnect: false,
+            saveLogs: false,
+            modelCacheSize: 1000
+        };
         this.settings = this.loadSettings();
-        this.initializeApp();
+        this.initializeSettings();
     }
 
     // Load settings from localStorage
@@ -22,12 +216,12 @@ class SettingsManager {
             const stored = localStorage.getItem('ollamaWrapperSettings');
             if (stored) {
                 const parsed = JSON.parse(stored);
-                return { ...DEFAULT_SETTINGS, ...parsed };
+                return { ...this.defaultSettings, ...parsed };
             }
         } catch (error) {
             console.error('Error loading settings:', error);
         }
-        return { ...DEFAULT_SETTINGS };
+        return { ...this.defaultSettings };
     }
 
     // Save settings to localStorage
@@ -56,17 +250,19 @@ class SettingsManager {
 
     // Reset to default settings
     resetToDefaults() {
-        this.settings = { ...DEFAULT_SETTINGS };
+        this.settings = { ...this.defaultSettings };
         return this.saveSettings();
     }
 
-    // Initialize the application
-    initializeApp() {
+    // Initialize settings functionality
+    initializeSettings() {
         this.applyTheme();
-        this.setupEventListeners();
-        this.populateSettingsForm();
+        this.setupSettingsEventListeners();
+        // Delay form population to ensure DOM is ready
+        setTimeout(() => this.populateSettingsForm(), 100);
         if (this.settings.autoConnect) {
-            this.testConnection();
+            // Auto-connect functionality
+            setTimeout(() => this.testConnection(), 1000);
         }
     }
 
@@ -81,34 +277,53 @@ class SettingsManager {
         }
     }
 
-    // Setup event listeners
-    setupEventListeners() {
-        // Navigation
-        document.getElementById('home-btn').addEventListener('click', () => this.showView('home'));
-        document.getElementById('settings-btn').addEventListener('click', () => this.showView('settings'));
-
-        // Settings form
-        document.getElementById('settings-form').addEventListener('submit', (e) => this.handleSettingsSubmit(e));
-        document.getElementById('reset-btn').addEventListener('click', () => this.handleReset());
-
-        // Connection test
-        document.getElementById('test-connection-btn').addEventListener('click', () => this.testConnection());
-
-        // Theme change listener
-        document.getElementById('theme').addEventListener('change', (e) => {
-            this.setSetting('theme', e.target.value);
-            this.applyTheme();
-        });
-
-        // Real-time validation
-        this.setupValidation();
-
-        // Listen for system theme changes
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-            if (this.settings.theme === 'auto') {
-                this.applyTheme();
+    // Setup settings event listeners
+    setupSettingsEventListeners() {
+        // Wait for DOM to be ready, then set up listeners
+        const setupListeners = () => {
+            // Settings form submission
+            const settingsForm = document.getElementById('settings-form');
+            if (settingsForm) {
+                settingsForm.addEventListener('submit', (e) => this.handleSettingsSubmit(e));
             }
-        });
+
+            // Reset button
+            const resetBtn = document.getElementById('reset-btn');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => this.handleReset());
+            }
+
+            // Connection test button
+            const testConnectionBtn = document.getElementById('test-connection-btn');
+            if (testConnectionBtn) {
+                testConnectionBtn.addEventListener('click', () => this.testConnection());
+            }
+
+            // Theme change listener
+            const themeSelect = document.getElementById('theme');
+            if (themeSelect) {
+                themeSelect.addEventListener('change', (e) => {
+                    this.setSetting('theme', e.target.value);
+                    this.applyTheme();
+                });
+            }
+
+            // Real-time validation
+            this.setupValidation();
+
+            // Listen for system theme changes
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+                if (this.settings.theme === 'auto') {
+                    this.applyTheme();
+                }
+            });
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupListeners);
+        } else {
+            setupListeners();
+        }
     }
 
     // Setup form validation
@@ -118,17 +333,6 @@ class SettingsManager {
             input.addEventListener('blur', () => this.validateField(input));
             input.addEventListener('input', () => this.clearError(input));
         });
-    }
-
-    // Show specific view
-    showView(viewName) {
-        // Update navigation
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`${viewName}-btn`).classList.add('active');
-
-        // Update views
-        document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
-        document.getElementById(`${viewName}-view`).classList.add('active');
     }
 
     // Populate settings form with current values
@@ -276,13 +480,15 @@ class SettingsManager {
     // Test connection to Ollama server
     async testConnection() {
         const statusIndicator = document.getElementById('connection-status');
-        const statusText = statusIndicator.querySelector('.status-text');
+        const statusText = statusIndicator?.querySelector('.status-text');
         const testButton = document.getElementById('test-connection-btn');
+        
+        if (!statusIndicator || !statusText) return;
         
         // Update UI to show testing state
         statusText.textContent = 'Testing...';
         statusIndicator.className = 'status-indicator testing';
-        testButton.disabled = true;
+        if (testButton) testButton.disabled = true;
 
         try {
             const controller = new AbortController();
@@ -320,7 +526,7 @@ class SettingsManager {
             
             this.showMessage(errorMessage, 'error');
         } finally {
-            testButton.disabled = false;
+            if (testButton) testButton.disabled = false;
         }
     }
 
@@ -335,21 +541,74 @@ class SettingsManager {
         message.className = `message ${type}`;
         message.textContent = text;
 
-        // Insert message at the top of the active view
-        const activeView = document.querySelector('.view.active');
-        const firstChild = activeView.firstElementChild;
-        activeView.insertBefore(message, firstChild);
+        // Insert message at the top of the settings view
+        const settingsView = document.getElementById('settings-view');
+        const viewContent = settingsView?.querySelector('.view-content');
+        if (viewContent) {
+            viewContent.insertBefore(message, viewContent.firstElementChild);
 
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            if (message.parentNode) {
-                message.remove();
-            }
-        }, 5000);
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (message.parentNode) {
+                    message.remove();
+                }
+            }, 5000);
+        }
     }
 }
 
-// Initialize the application when DOM is loaded
+// Utility functions for future enhancements
+const Utils = {
+    // Format file sizes
+    formatBytes(bytes, decimals = 2) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    },
+
+    // Format timestamps
+    formatTime(timestamp) {
+        return new Date(timestamp).toLocaleString();
+    },
+
+    // Show toast notifications (for future use)
+    showToast(message, type = 'info') {
+        console.log(`[${type.toUpperCase()}] ${message}`);
+        // TODO: Implement actual toast notifications
+    },
+
+    // Debounce function for search and other inputs
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+};
+
+// Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
+    window.ollamaApp = new OllamaWrapperApp();
     window.settingsManager = new SettingsManager();
 });
+
+// Handle window resize for responsive behavior
+window.addEventListener('resize', () => {
+    const sidebar = document.querySelector('.sidebar');
+    if (window.innerWidth > 768) {
+        sidebar.classList.remove('open');
+    }
+});
+
+// Export for potential module use
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { OllamaWrapperApp, Utils };
+}

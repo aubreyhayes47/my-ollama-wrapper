@@ -5,102 +5,182 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ollama Wrapper</title>
     <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Ollama Wrapper</h1>
-            <nav>
-                <button id="home-btn" class="nav-btn active">Home</button>
-                <button id="settings-btn" class="nav-btn">Settings</button>
-            </nav>
-        </header>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-brain"></i> Ollama Wrapper</h2>
+            </div>
+            <ul class="nav-list">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" data-view="models">
+                        <i class="fas fa-cubes"></i>
+                        <span>Models</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-view="server">
+                        <i class="fas fa-server"></i>
+                        <span>Server</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-view="settings">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-view="about">
+                        <i class="fas fa-info-circle"></i>
+                        <span>About</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
 
-        <main>
-            <!-- Home View -->
-            <div id="home-view" class="view active">
-                <div class="welcome">
-                    <h2>Welcome to Ollama Wrapper</h2>
-                    <p>A simple GUI for managing your Ollama instance.</p>
-                    <div class="status">
-                        <h3>Connection Status</h3>
-                        <div id="connection-status" class="status-indicator disconnected">
-                            <span class="status-dot"></span>
-                            <span class="status-text">Disconnected</span>
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="content-wrapper">
+                <!-- Models View -->
+                <div id="models-view" class="view active">
+                    <header class="view-header">
+                        <h1>Models</h1>
+                        <p>Manage your Ollama models</p>
+                    </header>
+                    <div class="view-content">
+                        <div class="card">
+                            <h3>Available Models</h3>
+                            <p>Here you can view and manage your installed Ollama models.</p>
+                            <div class="model-list">
+                                <div class="model-item">
+                                    <i class="fas fa-cube"></i>
+                                    <span>Model management functionality coming soon...</span>
+                                </div>
+                            </div>
                         </div>
-                        <button id="test-connection-btn" class="btn btn-primary">Test Connection</button>
                     </div>
                 </div>
-            </div>
 
-            <!-- Settings View -->
-            <div id="settings-view" class="view">
-                <div class="settings">
-                    <h2>Settings & Configuration</h2>
-                    
-                    <form id="settings-form">
-                        <!-- Ollama Server Settings -->
-                        <section class="settings-section">
-                            <h3>Ollama Server Settings</h3>
-                            
-                            <div class="form-group">
-                                <label for="server-url">Server URL:</label>
-                                <input type="url" id="server-url" name="serverUrl" placeholder="http://localhost:11434" required>
-                                <span class="error-message" id="server-url-error"></span>
+                <!-- Server View -->
+                <div id="server-view" class="view">
+                    <header class="view-header">
+                        <h1>Server</h1>
+                        <p>Monitor and control Ollama server</p>
+                    </header>
+                    <div class="view-content">
+                        <div class="card">
+                            <h3>Server Status</h3>
+                            <p>Monitor the status and performance of your Ollama server.</p>
+                            <div class="server-status">
+                                <div class="status-item">
+                                    <i class="fas fa-circle text-success"></i>
+                                    <span>Server monitoring functionality coming soon...</span>
+                                </div>
                             </div>
-
-                            <div class="form-group">
-                                <label for="api-timeout">API Timeout (seconds):</label>
-                                <input type="number" id="api-timeout" name="apiTimeout" min="1" max="300" value="30" required>
-                                <span class="error-message" id="api-timeout-error"></span>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="max-retries">Max Connection Retries:</label>
-                                <input type="number" id="max-retries" name="maxRetries" min="0" max="10" value="3" required>
-                                <span class="error-message" id="max-retries-error"></span>
-                            </div>
-                        </section>
-
-                        <!-- App Preferences -->
-                        <section class="settings-section">
-                            <h3>Application Preferences</h3>
-                            
-                            <div class="form-group">
-                                <label for="theme">Theme:</label>
-                                <select id="theme" name="theme" required>
-                                    <option value="light">Light</option>
-                                    <option value="dark">Dark</option>
-                                    <option value="auto">Auto (System)</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="auto-connect">
-                                    <input type="checkbox" id="auto-connect" name="autoConnect">
-                                    Auto-connect on startup
-                                </label>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="save-logs">
-                                    <input type="checkbox" id="save-logs" name="saveLogs">
-                                    Save connection logs
-                                </label>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="model-cache-size">Model Cache Size (MB):</label>
-                                <input type="number" id="model-cache-size" name="modelCacheSize" min="100" max="10000" value="1000">
-                                <span class="error-message" id="model-cache-size-error"></span>
-                            </div>
-                        </section>
-
-                        <div class="form-actions">
-                            <button type="button" id="reset-btn" class="btn btn-secondary">Reset to Defaults</button>
-                            <button type="submit" class="btn btn-primary">Save Settings</button>
                         </div>
-                    </form>
+                    </div>
+                </div>
+
+                <!-- Settings View -->
+                <div id="settings-view" class="view">
+                    <header class="view-header">
+                        <h1>Settings & Configuration</h1>
+                        <p>Configure your Ollama server and application preferences</p>
+                    </header>
+                    <div class="view-content">
+                        <form id="settings-form">
+                            <!-- Ollama Server Settings -->
+                            <section class="settings-section">
+                                <h3>Ollama Server Settings</h3>
+                                
+                                <div class="form-group">
+                                    <label for="server-url">Server URL:</label>
+                                    <input type="url" id="server-url" name="serverUrl" placeholder="http://localhost:11434" required>
+                                    <span class="error-message" id="server-url-error"></span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="api-timeout">API Timeout (seconds):</label>
+                                    <input type="number" id="api-timeout" name="apiTimeout" min="1" max="300" value="30" required>
+                                    <span class="error-message" id="api-timeout-error"></span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="max-retries">Max Connection Retries:</label>
+                                    <input type="number" id="max-retries" name="maxRetries" min="0" max="10" value="3" required>
+                                    <span class="error-message" id="max-retries-error"></span>
+                                </div>
+                            </section>
+
+                            <!-- App Preferences -->
+                            <section class="settings-section">
+                                <h3>Application Preferences</h3>
+                                
+                                <div class="form-group">
+                                    <label for="theme">Theme:</label>
+                                    <select id="theme" name="theme" required>
+                                        <option value="light">Light</option>
+                                        <option value="dark">Dark</option>
+                                        <option value="auto">Auto (System)</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="auto-connect">
+                                        <input type="checkbox" id="auto-connect" name="autoConnect">
+                                        Auto-connect on startup
+                                    </label>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="save-logs">
+                                        <input type="checkbox" id="save-logs" name="saveLogs">
+                                        Save connection logs
+                                    </label>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="model-cache-size">Model Cache Size (MB):</label>
+                                    <input type="number" id="model-cache-size" name="modelCacheSize" min="100" max="10000" value="1000">
+                                    <span class="error-message" id="model-cache-size-error"></span>
+                                </div>
+                            </section>
+
+                            <div class="form-actions">
+                                <button type="button" id="reset-btn" class="btn btn-secondary">Reset to Defaults</button>
+                                <button type="submit" class="btn btn-primary">Save Settings</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- About View -->
+                <div id="about-view" class="view">
+                    <header class="view-header">
+                        <h1>About</h1>
+                        <p>Information about Ollama Wrapper</p>
+                    </header>
+                    <div class="view-content">
+                        <div class="card">
+                            <h3>Ollama Wrapper</h3>
+                            <p>A simple GUI for managing and interacting with Ollama AI models.</p>
+                            <div class="about-info">
+                                <div class="info-item">
+                                    <strong>Version:</strong> 1.0.0
+                                </div>
+                                <div class="info-item">
+                                    <strong>Description:</strong> Comprehensive GUI for Ollama with chat, model management, and advanced settings
+                                </div>
+                                <div class="info-item">
+                                    <strong>License:</strong> Apache License 2.0
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>

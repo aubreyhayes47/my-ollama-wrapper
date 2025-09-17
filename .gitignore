@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+.env
+
+# Flask
+instance/
+.webassets-cache
+
+# Generated templates (auto-created by app)
+templates/
+
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test files
+test_*.py
+*_test.py
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporary files
+/tmp/
+*.tmp
+*.bak
