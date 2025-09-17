@@ -171,7 +171,13 @@ class OllamaChat {
         
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
-        contentDiv.textContent = message.content;
+        
+        // Use markdown rendering for assistant responses, plain text for user messages
+        if (message.role === 'assistant' && window.MarkdownUtils) {
+            contentDiv.innerHTML = window.MarkdownUtils.renderChatContent(message.content);
+        } else {
+            contentDiv.textContent = message.content;
+        }
         
         const timestampDiv = document.createElement('div');
         timestampDiv.className = 'message-timestamp';

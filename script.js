@@ -897,7 +897,13 @@ class OllamaWrapperApp {
         
         const contentElement = document.createElement('div');
         contentElement.className = 'message-content';
-        contentElement.textContent = content;
+        
+        // Use markdown rendering for assistant responses, plain text for user messages
+        if (role === 'assistant' && window.MarkdownUtils) {
+            contentElement.innerHTML = window.MarkdownUtils.renderChatContent(content);
+        } else {
+            contentElement.textContent = content;
+        }
         
         messageElement.appendChild(contentElement);
         messagesContainer.appendChild(messageElement);
