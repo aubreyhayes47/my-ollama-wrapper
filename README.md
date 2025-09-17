@@ -1,101 +1,85 @@
-# Ollama Wrapper GUI
-
-A simple GUI application for managing your local Ollama server. This application provides an easy-to-use interface for checking server status and controlling the Ollama service.
+# my-ollama-wrapper
+Just a simple GUI for Ollama
 
 ## Features
 
-- **Server Status Monitoring**: Real-time status checking with automatic refresh
-- **Server Controls**: Start, stop, and restart the Ollama server
-- **Model Information**: View available models and their details
-- **User-Friendly Interface**: Clean GUI with visual status indicators
-- **Cross-Platform**: Works on Windows, macOS, and Linux
+- **Web-based GUI** - Access through your browser
+- List all local Ollama models with detailed information
+- View model metadata including size, modification date, and family
+- Download new models from Ollama registry
+- Delete models with confirmation dialogs
+- Import models (placeholder for future implementation)
+- Real-time status updates and notifications
 
 ## Requirements
 
-- Python 3.6 or higher
-- Ollama installed on your system
-- Required Python packages (see requirements.txt)
+- Python 3.6+
+- Ollama running locally (default: http://localhost:11434)
+- Flask web framework
 
 ## Installation
 
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/aubreyhayes47/my-ollama-wrapper.git
-   cd my-ollama-wrapper
-   ```
-
-2. Install Python dependencies:
+1. Clone this repository
+2. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. Make sure Ollama is installed on your system:
-   - Visit [Ollama's official website](https://ollama.ai) for installation instructions
-
 ## Usage
 
-### Running the Application
-
-You can start the application in several ways:
-
-1. **Using the main launcher**:
+1. Make sure Ollama is running on your system
+2. Run the application:
    ```bash
    python main.py
    ```
-
-2. **Direct execution**:
+   or
    ```bash
-   python ollama_wrapper.py
+   python ollama_manager.py
    ```
+3. Open your browser and go to: http://localhost:5000
 
-3. **Make executable** (Linux/macOS):
-   ```bash
-   chmod +x main.py
-   ./main.py
-   ```
+## Interface
 
-### Using the Interface
+The web GUI provides:
+- **Model List**: Table showing all installed models with:
+  - Model name
+  - File size (human-readable format)
+  - Last modification date
+  - Model family/type
+- **Actions**:
+  - **Refresh**: Update the model list
+  - **Download Model**: Download a new model by name
+  - **Import Model**: Import models (future feature)
+  - **Delete Selected**: Remove selected model with confirmation
+  - **Model Info**: View detailed information about selected model in a modal
 
-1. **Server Status**: The application automatically checks the Ollama server status every 5 seconds
-2. **Manual Refresh**: Click the "Refresh" button to manually check server status
-3. **Server Controls**:
-   - **Start Server**: Attempts to start the Ollama service
-   - **Stop Server**: Stops the running Ollama service
-   - **Restart Server**: Stops and then starts the Ollama service
-4. **Auto-refresh**: Toggle automatic status monitoring on/off
+## Features
 
-### Server Information
+### Model Management
+- **List Models**: View all locally installed Ollama models
+- **Download Models**: Pull new models from the Ollama registry
+- **Delete Models**: Remove unwanted models with confirmation dialogs
+- **Model Information**: View detailed metadata including modelfile, parameters, and templates
 
-The application displays:
-- Current server status (Running/Stopped/Error)
-- Server host and port
-- Response time
-- Available models and their sizes
-- Last update timestamp
+### User Experience
+- Clean, responsive web interface
+- Real-time status notifications
+- Confirmation dialogs for destructive actions
+- Modal popups for detailed model information
+- Error handling with user-friendly messages
 
-## Configuration
+## API Endpoints
 
-The application uses the default Ollama server address `http://localhost:11434`. This can be modified in the source code if needed.
+The application also provides REST API endpoints:
+- `GET /api/models` - List all models
+- `POST /api/download` - Download a model
+- `POST /api/delete` - Delete a model  
+- `GET /api/info/<model_name>` - Get model information
 
-## Troubleshooting
+## Notes
 
-### Common Issues
-
-1. **"Ollama executable not found"**: Make sure Ollama is installed and in your system PATH
-2. **Connection refused**: Verify that Ollama is properly installed and the port 11434 is available
-3. **Permission denied**: On Linux/macOS, you may need to run with appropriate permissions for system service control
-
-### Server Control Commands
-
-The application attempts to use these commands for server control:
-- **Start**: `ollama serve`, `systemctl start ollama`
-- **Stop**: `pkill -f ollama`, `systemctl stop ollama`, `killall ollama`
-- **Restart**: Combination of stop and start commands
-
-## Contributing
-
-Feel free to submit issues and enhancement requests!
-
-## License
-
-This project is licensed under the Apache License 2.0 - see the LICENSE file for details.
+- The application connects to Ollama on `http://localhost:11434` by default
+- All destructive actions (like model deletion) require confirmation
+- Long-running operations (download, delete) run in background threads
+- The web interface provides real-time feedback for all operations
+\
