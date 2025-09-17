@@ -3,47 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Ollama Wrapper</title>
+    <title>Ollama Wrapper</title>
     <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>My Ollama Wrapper</h1>
-            <p>Simple GUI for Ollama</p>
-        </header>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-brain"></i> Ollama Wrapper</h2>
+            </div>
+            <ul class="nav-list">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" data-view="models">
+                        <i class="fas fa-cubes"></i>
+                        <span>Models</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-view="server">
+                        <i class="fas fa-server"></i>
+                        <span>Server</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-view="settings">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-view="about">
+                        <i class="fas fa-info-circle"></i>
+                        <span>About</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
 
-        <div class="model-selection">
-            <label for="model-select">Select Model:</label>
-            <select id="model-select">
-                <option value="">Loading models...</option>
-            </select>
-            <button id="refresh-models">Refresh</button>
-        </div>
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="content-wrapper">
+                <!-- Models View -->
+                <div id="models-view" class="view active">
+                    <header class="view-header">
+                        <h1>Models</h1>
+                        <p>Manage your Ollama models</p>
+                    </header>
+                    <div class="view-content">
+                        <div class="card">
+                            <h3>Available Models</h3>
+                            <p>Here you can view and manage your installed Ollama models.</p>
+                            <div class="model-list">
+                                <div class="model-item">
+                                    <i class="fas fa-cube"></i>
+                                    <span>Model management functionality coming soon...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        <div class="chat-container">
-            <div class="chat-history" id="chat-history">
-                <div class="welcome-message">
-                    <p>Welcome to My Ollama Wrapper! Select a model and start chatting.</p>
+                <!-- Server View -->
+                <div id="server-view" class="view">
+                    <header class="view-header">
+                        <h1>Server</h1>
+                        <p>Monitor and control Ollama server</p>
+                    </header>
+                    <div class="view-content">
+                        <div class="card">
+                            <h3>Server Status</h3>
+                            <p>Monitor the status and performance of your Ollama server.</p>
+                            <div class="server-status">
+                                <div class="status-item">
+                                    <i class="fas fa-circle text-success"></i>
+                                    <span>Server monitoring functionality coming soon...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings View -->
+                <div id="settings-view" class="view">
+                    <header class="view-header">
+                        <h1>Settings</h1>
+                        <p>Configure your Ollama wrapper</p>
+                    </header>
+                    <div class="view-content">
+                        <div class="card">
+                            <h3>Configuration</h3>
+                            <p>Customize your Ollama wrapper settings and preferences.</p>
+                            <div class="settings-form">
+                                <div class="form-group">
+                                    <label>Server URL:</label>
+                                    <input type="text" placeholder="http://localhost:11434" disabled>
+                                </div>
+                                <div class="form-group">
+                                    <label>Theme:</label>
+                                    <select disabled>
+                                        <option>Dark</option>
+                                        <option>Light</option>
+                                    </select>
+                                </div>
+                                <p><em>Settings functionality coming soon...</em></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- About View -->
+                <div id="about-view" class="view">
+                    <header class="view-header">
+                        <h1>About</h1>
+                        <p>Information about Ollama Wrapper</p>
+                    </header>
+                    <div class="view-content">
+                        <div class="card">
+                            <h3>Ollama Wrapper</h3>
+                            <p>A simple GUI for managing and interacting with Ollama AI models.</p>
+                            <div class="about-info">
+                                <div class="info-item">
+                                    <strong>Version:</strong> 1.0.0
+                                </div>
+                                <div class="info-item">
+                                    <strong>Description:</strong> Just a simple GUI for Ollama
+                                </div>
+                                <div class="info-item">
+                                    <strong>License:</strong> Apache License 2.0
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
-            <div class="input-container">
-                <textarea 
-                    id="prompt-input" 
-                    placeholder="Type your prompt here..." 
-                    rows="3"
-                    disabled
-                ></textarea>
-                <button id="send-button" disabled>Send</button>
-                <button id="clear-history">Clear History</button>
-            </div>
-        </div>
-
-        <div class="error-container" id="error-container" style="display: none;">
-            <div class="error-message" id="error-message"></div>
-            <button id="close-error">×</button>
-        </div>
+        </main>
     </div>
 
     <script src="script.js"></script>

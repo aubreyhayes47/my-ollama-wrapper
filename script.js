@@ -1,257 +1,250 @@
-class OllamaChat {
+// Navigation and routing functionality
+class OllamaWrapperApp {
     constructor() {
-        this.baseUrl = 'http://localhost:11434';
-        this.selectedModel = '';
-        this.chatHistory = [];
-        this.isLoading = false;
-        
-        this.initializeElements();
-        this.attachEventListeners();
-        this.loadModels();
+        this.currentView = 'models';
+        this.init();
     }
-    
-    initializeElements() {
-        this.modelSelect = document.getElementById('model-select');
-        this.refreshButton = document.getElementById('refresh-models');
-        this.chatHistoryDiv = document.getElementById('chat-history');
-        this.promptInput = document.getElementById('prompt-input');
-        this.sendButton = document.getElementById('send-button');
-        this.clearButton = document.getElementById('clear-history');
-        this.errorContainer = document.getElementById('error-container');
-        this.errorMessage = document.getElementById('error-message');
-        this.closeError = document.getElementById('close-error');
+
+    init() {
+        this.setupEventListeners();
+        this.setupMobileMenu();
+        this.showView(this.currentView);
     }
-    
-    attachEventListeners() {
-        this.modelSelect.addEventListener('change', (e) => {
-            this.selectedModel = e.target.value;
-            this.updateInputState();
-        });
-        
-        this.refreshButton.addEventListener('click', () => {
-            this.loadModels();
-        });
-        
-        this.sendButton.addEventListener('click', () => {
-            this.sendMessage();
-        });
-        
-        this.promptInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+
+    setupEventListeners() {
+        // Navigation click handlers
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
                 e.preventDefault();
-                this.sendMessage();
-            }
-        });
-        
-        this.clearButton.addEventListener('click', () => {
-            this.clearHistory();
-        });
-        
-        this.closeError.addEventListener('click', () => {
-            this.hideError();
-        });
-    }
-    
-    async loadModels() {
-        try {
-            this.modelSelect.innerHTML = '<option value="">Loading models...</option>';
-            this.modelSelect.disabled = true;
-            
-            const response = await fetch(`${this.baseUrl}/api/tags`);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            
-            this.modelSelect.innerHTML = '<option value="">Select a model...</option>';
-            
-            if (data.models && data.models.length > 0) {
-                data.models.forEach(model => {
-                    const option = document.createElement('option');
-                    option.value = model.name;
-                    option.textContent = model.name;
-                    this.modelSelect.appendChild(option);
-                });
-            } else {
-                this.modelSelect.innerHTML = '<option value="">No models found</option>';
-            }
-            
-        } catch (error) {
-            console.error('Error loading models:', error);
-            this.modelSelect.innerHTML = '<option value="">Error loading models</option>';
-            this.showError('Failed to load models. Make sure Ollama is running on localhost:11434');
-        } finally {
-            this.modelSelect.disabled = false;
-        }
-    }
-    
-    updateInputState() {
-        const hasModel = this.selectedModel && this.selectedModel !== '';
-        this.promptInput.disabled = !hasModel || this.isLoading;
-        this.sendButton.disabled = !hasModel || this.isLoading;
-        
-        if (hasModel) {
-            this.promptInput.placeholder = `Type your prompt for ${this.selectedModel}...`;
-        } else {
-            this.promptInput.placeholder = 'Select a model first...';
-        }
-    }
-    
-    async sendMessage() {
-        const prompt = this.promptInput.value.trim();
-        
-        if (!prompt || !this.selectedModel || this.isLoading) {
-            return;
-        }
-        
-        this.isLoading = true;
-        this.updateInputState();
-        
-        // Add user message to chat
-        this.addMessage('user', prompt);
-        this.promptInput.value = '';
-        
-        // Add typing indicator
-        const typingId = this.addTypingIndicator();
-        
-        try {
-            const response = await fetch(`${this.baseUrl}/api/generate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    model: this.selectedModel,
-                    prompt: prompt,
-                    stream: false
-                }),
+                const viewName = link.getAttribute('data-view');
+                this.navigateToView(viewName);
             });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+        });
+
+        // Handle browser back/forward
+        window.addEventListener('popstate', (e) => {
+            const state = e.state;
+            if (state && state.view) {
+                this.showView(state.view, false);
             }
-            
-            const data = await response.json();
-            
-            // Remove typing indicator
-            this.removeTypingIndicator(typingId);
-            
-            // Add assistant response
-            this.addMessage('assistant', data.response || 'No response received');
-            
-        } catch (error) {
-            console.error('Error sending message:', error);
-            this.removeTypingIndicator(typingId);
-            this.addMessage('assistant', 'Error: Failed to get response from model. Please check if Ollama is running and the model is available.');
-            this.showError('Failed to send message. Please check your connection to Ollama.');
-        } finally {
-            this.isLoading = false;
-            this.updateInputState();
-            this.promptInput.focus();
+        });
+
+        // Handle initial page load with hash
+        window.addEventListener('load', () => {
+            const hash = window.location.hash.substring(1);
+            if (hash && this.isValidView(hash)) {
+                this.navigateToView(hash);
+            }
+        });
+    }
+
+    setupMobileMenu() {
+        // Create mobile menu button if it doesn't exist
+        if (!document.querySelector('.mobile-menu-btn')) {
+            const menuBtn = document.createElement('button');
+            menuBtn.className = 'mobile-menu-btn';
+            menuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+            document.body.appendChild(menuBtn);
+
+            // Toggle sidebar on mobile
+            menuBtn.addEventListener('click', () => {
+                const sidebar = document.querySelector('.sidebar');
+                sidebar.classList.toggle('open');
+            });
+
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', (e) => {
+                const sidebar = document.querySelector('.sidebar');
+                const menuBtn = document.querySelector('.mobile-menu-btn');
+                
+                if (window.innerWidth <= 768 && 
+                    !sidebar.contains(e.target) && 
+                    !menuBtn.contains(e.target) &&
+                    sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                }
+            });
         }
     }
-    
-    addMessage(role, content) {
-        const message = {
-            role: role,
-            content: content,
-            timestamp: new Date().toLocaleTimeString()
-        };
-        
-        this.chatHistory.push(message);
-        this.renderMessage(message);
-        this.scrollToBottom();
-    }
-    
-    renderMessage(message) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${message.role}`;
-        
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'message-content';
-        contentDiv.textContent = message.content;
-        
-        const timestampDiv = document.createElement('div');
-        timestampDiv.className = 'message-timestamp';
-        timestampDiv.textContent = message.timestamp;
-        
-        messageDiv.appendChild(contentDiv);
-        messageDiv.appendChild(timestampDiv);
-        
-        // Remove welcome message if it exists
-        const welcomeMessage = this.chatHistoryDiv.querySelector('.welcome-message');
-        if (welcomeMessage) {
-            welcomeMessage.remove();
-        }
-        
-        this.chatHistoryDiv.appendChild(messageDiv);
-    }
-    
-    addTypingIndicator() {
-        const typingDiv = document.createElement('div');
-        typingDiv.className = 'message assistant';
-        
-        const typingContent = document.createElement('div');
-        typingContent.className = 'typing-indicator';
-        typingContent.textContent = 'Thinking';
-        
-        typingDiv.appendChild(typingContent);
-        
-        const typingId = Date.now().toString();
-        typingDiv.id = `typing-${typingId}`;
-        
-        this.chatHistoryDiv.appendChild(typingDiv);
-        this.scrollToBottom();
-        
-        return typingId;
-    }
-    
-    removeTypingIndicator(typingId) {
-        const typingDiv = document.getElementById(`typing-${typingId}`);
-        if (typingDiv) {
-            typingDiv.remove();
-        }
-    }
-    
-    clearHistory() {
-        if (this.chatHistory.length === 0) {
+
+    navigateToView(viewName) {
+        if (!this.isValidView(viewName)) {
+            console.warn(`Invalid view: ${viewName}`);
             return;
         }
-        
-        if (confirm('Are you sure you want to clear the chat history?')) {
-            this.chatHistory = [];
-            this.chatHistoryDiv.innerHTML = `
-                <div class="welcome-message">
-                    <p>Chat history cleared. Start a new conversation!</p>
-                </div>
-            `;
+
+        this.showView(viewName);
+        this.updateURL(viewName);
+        this.closeMobileSidebar();
+    }
+
+    showView(viewName, updateHistory = true) {
+        // Hide all views
+        const allViews = document.querySelectorAll('.view');
+        allViews.forEach(view => {
+            view.classList.remove('active');
+        });
+
+        // Show selected view
+        const targetView = document.getElementById(`${viewName}-view`);
+        if (targetView) {
+            targetView.classList.add('active');
+        }
+
+        // Update navigation active state
+        this.updateActiveNav(viewName);
+
+        // Update current view
+        this.currentView = viewName;
+
+        // Update browser history
+        if (updateHistory) {
+            const state = { view: viewName };
+            const title = this.getViewTitle(viewName);
+            history.pushState(state, title, `#${viewName}`);
+            document.title = `${title} - Ollama Wrapper`;
+        }
+
+        // Trigger view-specific initialization if needed
+        this.initializeView(viewName);
+    }
+
+    updateActiveNav(viewName) {
+        // Remove active class from all nav links
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+        });
+
+        // Add active class to current nav link
+        const activeLink = document.querySelector(`[data-view="${viewName}"]`);
+        if (activeLink) {
+            activeLink.classList.add('active');
         }
     }
-    
-    scrollToBottom() {
-        setTimeout(() => {
-            this.chatHistoryDiv.scrollTop = this.chatHistoryDiv.scrollHeight;
-        }, 100);
+
+    updateURL(viewName) {
+        window.location.hash = viewName;
     }
-    
-    showError(message) {
-        this.errorMessage.textContent = message;
-        this.errorContainer.style.display = 'block';
-        
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            this.hideError();
-        }, 5000);
+
+    closeMobileSidebar() {
+        if (window.innerWidth <= 768) {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.remove('open');
+        }
     }
-    
-    hideError() {
-        this.errorContainer.style.display = 'none';
+
+    isValidView(viewName) {
+        const validViews = ['models', 'server', 'settings', 'about'];
+        return validViews.includes(viewName);
+    }
+
+    getViewTitle(viewName) {
+        const titles = {
+            'models': 'Models',
+            'server': 'Server',
+            'settings': 'Settings',
+            'about': 'About'
+        };
+        return titles[viewName] || 'Ollama Wrapper';
+    }
+
+    initializeView(viewName) {
+        // This method can be extended to initialize specific functionality
+        // for each view when it becomes active
+        switch (viewName) {
+            case 'models':
+                this.initModelsView();
+                break;
+            case 'server':
+                this.initServerView();
+                break;
+            case 'settings':
+                this.initSettingsView();
+                break;
+            case 'about':
+                this.initAboutView();
+                break;
+        }
+    }
+
+    initModelsView() {
+        // Initialize models view functionality
+        console.log('Models view initialized');
+        // TODO: Load and display available models
+    }
+
+    initServerView() {
+        // Initialize server view functionality
+        console.log('Server view initialized');
+        // TODO: Check server status and display metrics
+    }
+
+    initSettingsView() {
+        // Initialize settings view functionality
+        console.log('Settings view initialized');
+        // TODO: Load and display current settings
+    }
+
+    initAboutView() {
+        // Initialize about view functionality
+        console.log('About view initialized');
+        // TODO: Load version info and other details
     }
 }
 
-// Initialize the application when the DOM is loaded
+// Utility functions for future enhancements
+const Utils = {
+    // Format file sizes
+    formatBytes(bytes, decimals = 2) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    },
+
+    // Format timestamps
+    formatTime(timestamp) {
+        return new Date(timestamp).toLocaleString();
+    },
+
+    // Show toast notifications (for future use)
+    showToast(message, type = 'info') {
+        console.log(`[${type.toUpperCase()}] ${message}`);
+        // TODO: Implement actual toast notifications
+    },
+
+    // Debounce function for search and other inputs
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+};
+
+// Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    new OllamaChat();
+    window.ollamaApp = new OllamaWrapperApp();
 });
+
+// Handle window resize for responsive behavior
+window.addEventListener('resize', () => {
+    const sidebar = document.querySelector('.sidebar');
+    if (window.innerWidth > 768) {
+        sidebar.classList.remove('open');
+    }
+});
+
+// Export for potential module use
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { OllamaWrapperApp, Utils };
+}
