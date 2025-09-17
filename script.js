@@ -237,13 +237,46 @@ class OllamaWrapperApp {
                 logs: [],
                 errors: [],
                 lastLogUpdate: null,
-                lastErrorUpdate: null
+                lastErrorUpdate: null,
+                backendHealth: 'unknown'
             };
+        }
+    }
+
+    // Check backend server health
+    async checkBackendHealth() {
+        try {
+            const backendUrl = 'http://localhost:5000';
+            const response = await fetch(`${backendUrl}/api/server/status`, {
+                timeout: 5000 // 5 second timeout for health check
+            });
+            
+            if (response.ok) {
+                window.monitoringState.backendHealth = 'healthy';
+                return true;
+            } else {
+                window.monitoringState.backendHealth = 'unhealthy';
+                return false;
+            }
+        } catch (error) {
+            window.monitoringState.backendHealth = 'unreachable';
+            console.warn('Backend health check failed:', error.message);
+            return false;
         }
     }
 
     // Load real-time data from server
     async loadRealTimeData() {
+        // Check backend health first
+        const isHealthy = await this.checkBackendHealth();
+        
+        if (!isHealthy) {
+            const healthError = `Backend server not available (${window.monitoringState.backendHealth})`;
+            this.displayLogsError(healthError);
+            this.displayErrorsError(healthError);
+            return;
+        }
+
         await Promise.all([
             this.fetchServerLogs(),
             this.fetchServerErrors()
@@ -254,7 +287,9 @@ class OllamaWrapperApp {
     async fetchServerLogs() {
         try {
             const backendUrl = 'http://localhost:5000'; // Use Flask server
-            const response = await fetch(`${backendUrl}/api/server/logs`);
+            const response = await fetch(`${backendUrl}/api/server/logs`, {
+                timeout: 10000 // 10 second timeout
+            });
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -272,6 +307,11 @@ class OllamaWrapperApp {
         } catch (error) {
             console.error('Error fetching logs:', error);
             this.displayLogsError(error.message);
+            
+            // Try to provide helpful context based on error type
+            if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                console.warn('Network fetch failed - likely a connection issue with the backend server');
+            }
         }
     }
 
@@ -279,7 +319,9 @@ class OllamaWrapperApp {
     async fetchServerErrors() {
         try {
             const backendUrl = 'http://localhost:5000'; // Use Flask server
-            const response = await fetch(`${backendUrl}/api/server/errors`);
+            const response = await fetch(`${backendUrl}/api/server/errors`, {
+                timeout: 10000 // 10 second timeout
+            });
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -297,6 +339,11 @@ class OllamaWrapperApp {
         } catch (error) {
             console.error('Error fetching errors:', error);
             this.displayErrorsError(error.message);
+            
+            // Try to provide helpful context based on error type
+            if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                console.warn('Network fetch failed - likely a connection issue with the backend server');
+            }
         }
     }
 
@@ -305,19 +352,72 @@ class OllamaWrapperApp {
         const logsContainer = document.getElementById('serverLogs');
         if (!logsContainer) return;
 
+        // Determine error type and provide appropriate guidance
+        let troubleshooting = '';
+        if (errorMessage.includes('NetworkError') || errorMessage.includes('fetch')) {
+            troubleshooting = `
+                <div class="troubleshooting-tips">
+                    <h4>Connection Issues:</h4>
+                    <ul>
+                        <li>Ensure the Flask backend server is running on port 5000</li>
+                        <li>Check if localhost:5000 is accessible in your browser</li>
+                        <li>Verify no firewall is blocking the connection</li>
+                    </ul>
+                </div>
+            `;
+        } else if (errorMessage.includes('Connection refused')) {
+            troubleshooting = `
+                <div class="troubleshooting-tips">
+                    <h4>Backend Connection Issues:</h4>
+                    <ul>
+                        <li>Start the Flask backend: <code>python ollama_manager.py</code></li>
+                        <li>Ensure Flask server is running on http://localhost:5000</li>
+                        <li>Check server logs for any startup errors</li>
+                    </ul>
+                </div>
+            `;
+        }
+
         logsContainer.innerHTML = `
             <div class="log-entry error">
                 <span class="timestamp">[${new Date().toISOString().replace('T', ' ').substring(0, 19)}]</span>
                 <span class="level">ERROR</span>
                 <span class="message">Failed to load server logs: ${errorMessage}</span>
             </div>
+            ${troubleshooting}
         `;
     }
 
     // Display error when errors can't be loaded
     displayErrorsError(errorMessage) {
-        const errorsContainer = document.getElementById('serverErrors');
+        const errorsContainer = document.getElementById('errorList');
         if (!errorsContainer) return;
+
+        // Determine error type and provide appropriate guidance
+        let troubleshooting = '';
+        if (errorMessage.includes('NetworkError') || errorMessage.includes('fetch')) {
+            troubleshooting = `
+                <div class="troubleshooting-tips">
+                    <h4>Connection Issues:</h4>
+                    <ul>
+                        <li>Ensure the Flask backend server is running on port 5000</li>
+                        <li>Check if localhost:5000 is accessible in your browser</li>
+                        <li>Verify no firewall is blocking the connection</li>
+                    </ul>
+                </div>
+            `;
+        } else if (errorMessage.includes('Connection refused')) {
+            troubleshooting = `
+                <div class="troubleshooting-tips">
+                    <h4>Backend Connection Issues:</h4>
+                    <ul>
+                        <li>Start the Flask backend: <code>python ollama_manager.py</code></li>
+                        <li>Ensure Flask server is running on http://localhost:5000</li>
+                        <li>Check server logs for any startup errors</li>
+                    </ul>
+                </div>
+            `;
+        }
 
         errorsContainer.innerHTML = `
             <div class="error-entry warning">
@@ -331,6 +431,7 @@ class OllamaWrapperApp {
                     <p><strong>Suggestion:</strong> Check that the backend server is running and accessible</p>
                 </div>
             </div>
+            ${troubleshooting}
         `;
     }
 
@@ -478,7 +579,7 @@ class OllamaWrapperApp {
 
     async loadModels() {
         const modelList = document.getElementById('model-list');
-        const serverUrl = window.settingsManager ? window.settingsManager.getSetting('serverUrl') : 'http://localhost:11434';
+        const backendUrl = 'http://localhost:5000'; // Use Flask server
         
         if (!modelList) return;
 
@@ -491,18 +592,22 @@ class OllamaWrapperApp {
         `;
 
         try {
-            const response = await fetch(`${serverUrl}/api/tags`);
+            const response = await fetch(`${backendUrl}/api/models`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             
             const data = await response.json();
-            this.displayModels(data.models || []);
-            this.showStatus('Models loaded successfully', 'success');
+            if (data.success) {
+                this.displayModels(data.models || []);
+                this.showStatus('Models loaded successfully', 'success');
+            } else {
+                throw new Error(data.error || 'Failed to load models');
+            }
         } catch (error) {
             console.error('Error loading models:', error);
             this.displayModelsError(error.message);
-            this.showStatus('Failed to load models. Make sure Ollama is running.', 'error');
+            this.showStatus('Failed to load models from backend server.', 'error');
         }
     }
 
@@ -598,24 +703,29 @@ class OllamaWrapperApp {
         this.hideDownloadModal();
         this.showStatus(`Downloading model "${modelName}"...`, 'info');
 
-        const serverUrl = window.settingsManager ? window.settingsManager.getSetting('serverUrl') : 'http://localhost:11434';
+        const backendUrl = 'http://localhost:5000'; // Use Flask server
 
         try {
-            const response = await fetch(`${serverUrl}/api/pull`, {
+            const response = await fetch(`${backendUrl}/api/download`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ name: modelName })
+                body: JSON.stringify({ model_name: modelName })
             });
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            this.showStatus(`Model "${modelName}" downloaded successfully!`, 'success');
-            // Refresh the models list
-            setTimeout(() => this.loadModels(), 1000);
+            const data = await response.json();
+            if (data.success) {
+                this.showStatus(`Model "${modelName}" downloaded successfully!`, 'success');
+                // Refresh the models list
+                setTimeout(() => this.loadModels(), 1000);
+            } else {
+                throw new Error(data.error || 'Download failed');
+            }
         } catch (error) {
             console.error('Error downloading model:', error);
             this.showStatus(`Failed to download model "${modelName}": ${error.message}`, 'error');
@@ -629,40 +739,15 @@ class OllamaWrapperApp {
 
         this.showStatus(`Deleting model "${modelName}"...`, 'info');
 
-        const serverUrl = window.settingsManager ? window.settingsManager.getSetting('serverUrl') : 'http://localhost:11434';
+        const backendUrl = 'http://localhost:5000'; // Use Flask server
 
         try {
-            const response = await fetch(`${serverUrl}/api/delete`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ name: modelName })
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            this.showStatus(`Model "${modelName}" deleted successfully!`, 'success');
-            // Refresh the models list
-            this.loadModels();
-        } catch (error) {
-            console.error('Error deleting model:', error);
-            this.showStatus(`Failed to delete model "${modelName}": ${error.message}`, 'error');
-        }
-    }
-
-    async showModelInfo(modelName) {
-        const serverUrl = window.settingsManager ? window.settingsManager.getSetting('serverUrl') : 'http://localhost:11434';
-
-        try {
-            const response = await fetch(`${serverUrl}/api/show`, {
+            const response = await fetch(`${backendUrl}/api/delete`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ name: modelName })
+                body: JSON.stringify({ model_name: modelName })
             });
 
             if (!response.ok) {
@@ -670,9 +755,36 @@ class OllamaWrapperApp {
             }
 
             const data = await response.json();
-            const info = JSON.stringify(data, null, 2);
-            
-            alert(`Model Information for "${modelName}":\n\n${info}`);
+            if (data.success) {
+                this.showStatus(`Model "${modelName}" deleted successfully!`, 'success');
+                // Refresh the models list
+                this.loadModels();
+            } else {
+                throw new Error(data.error || 'Delete failed');
+            }
+        } catch (error) {
+            console.error('Error deleting model:', error);
+            this.showStatus(`Failed to delete model "${modelName}": ${error.message}`, 'error');
+        }
+    }
+
+    async showModelInfo(modelName) {
+        const backendUrl = 'http://localhost:5000'; // Use Flask server
+
+        try {
+            const response = await fetch(`${backendUrl}/api/info/${encodeURIComponent(modelName)}`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (data.success && data.info) {
+                const info = JSON.stringify(data.info, null, 2);
+                alert(`Model Information for "${modelName}":\n\n${info}`);
+            } else {
+                throw new Error(data.error || 'Failed to get model information');
+            }
         } catch (error) {
             console.error('Error getting model info:', error);
             alert(`Failed to get model information: ${error.message}`);
@@ -761,7 +873,7 @@ class OllamaWrapperApp {
 
     async loadChatModels() {
         const modelSelect = document.getElementById('chat-model-select');
-        const serverUrl = window.settingsManager ? window.settingsManager.getSetting('serverUrl') : 'http://localhost:11434';
+        const backendUrl = 'http://localhost:5000'; // Use Flask server
         
         if (!modelSelect) return;
 
@@ -770,17 +882,21 @@ class OllamaWrapperApp {
         modelSelect.disabled = true;
 
         try {
-            const response = await fetch(`${serverUrl}/api/tags`);
+            const response = await fetch(`${backendUrl}/api/models`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             
             const data = await response.json();
-            this.displayChatModels(data.models || []);
+            if (data.success) {
+                this.displayChatModels(data.models || []);
+            } else {
+                throw new Error(data.error || 'Failed to load models');
+            }
         } catch (error) {
             console.error('Error loading chat models:', error);
             modelSelect.innerHTML = '<option value="">Error loading models</option>';
-            this.showChatError('Failed to load models. Make sure Ollama is running.');
+            this.showChatError('Failed to load models from backend server.');
         } finally {
             modelSelect.disabled = false;
         }
