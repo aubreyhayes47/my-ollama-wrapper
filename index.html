@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ollama Wrapper - Logs & Monitoring</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🦙 Ollama Wrapper</h1>
+            <p>Simple GUI for Ollama with Logs & Error Monitoring</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-button active" onclick="openTab(event, 'logs')">Server Logs</button>
+            <button class="tab-button" onclick="openTab(event, 'errors')">Error Monitor</button>
+            <button class="tab-button" onclick="openTab(event, 'troubleshooting')">Troubleshooting</button>
+        </nav>
+
+        <div id="logs" class="tab-content active">
+            <div class="section-header">
+                <h2>🔍 Server Logs</h2>
+                <div class="controls">
+                    <button onclick="refreshLogs()" class="btn-primary">Refresh</button>
+                    <button onclick="clearLogs()" class="btn-secondary">Clear</button>
+                    <label>
+                        <input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()"> Auto-refresh
+                    </label>
+                </div>
+            </div>
+            <div class="log-viewer">
+                <div id="serverLogs" class="logs-content">
+                    <div class="log-entry info">
+                        <span class="timestamp">[2024-01-15 10:30:45]</span>
+                        <span class="level">INFO</span>
+                        <span class="message">Ollama server starting...</span>
+                    </div>
+                    <div class="log-entry success">
+                        <span class="timestamp">[2024-01-15 10:30:46]</span>
+                        <span class="level">INFO</span>
+                        <span class="message">Server listening on port 11434</span>
+                    </div>
+                    <div class="log-entry info">
+                        <span class="timestamp">[2024-01-15 10:30:47]</span>
+                        <span class="level">INFO</span>
+                        <span class="message">Model loading: llama2</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="errors" class="tab-content">
+            <div class="section-header">
+                <h2>⚠️ Error Monitor</h2>
+                <div class="controls">
+                    <button onclick="refreshErrors()" class="btn-primary">Refresh</button>
+                    <button onclick="clearErrors()" class="btn-secondary">Clear All</button>
+                    <select id="errorFilter" onchange="filterErrors()">
+                        <option value="all">All Errors</option>
+                        <option value="critical">Critical</option>
+                        <option value="error">Error</option>
+                        <option value="warning">Warning</option>
+                    </select>
+                </div>
+            </div>
+            <div class="error-viewer">
+                <div id="errorList" class="errors-content">
+                    <div class="error-entry critical">
+                        <div class="error-header">
+                            <span class="timestamp">[2024-01-15 10:35:12]</span>
+                            <span class="level critical">CRITICAL</span>
+                            <span class="error-title">Model loading failed</span>
+                        </div>
+                        <div class="error-details">
+                            <p><strong>Error:</strong> Failed to load model 'llama2': insufficient memory</p>
+                            <p><strong>Stack:</strong> ModelLoader.load() at line 45</p>
+                            <p><strong>Suggestion:</strong> Free up system memory or use a smaller model</p>
+                        </div>
+                    </div>
+                    <div class="error-entry warning">
+                        <div class="error-header">
+                            <span class="timestamp">[2024-01-15 10:32:30]</span>
+                            <span class="level warning">WARNING</span>
+                            <span class="error-title">High memory usage</span>
+                        </div>
+                        <div class="error-details">
+                            <p><strong>Warning:</strong> Memory usage at 85% of available RAM</p>
+                            <p><strong>Current usage:</strong> 6.8GB / 8GB</p>
+                            <p><strong>Suggestion:</strong> Consider closing other applications or using a smaller model</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="troubleshooting" class="tab-content">
+            <div class="section-header">
+                <h2>🛠️ Troubleshooting Guide</h2>
+            </div>
+            <div class="troubleshooting-content">
+                <div class="troubleshooting-section">
+                    <h3>Common Issues</h3>
+                    
+                    <div class="issue-item">
+                        <h4>🔸 Ollama Server Not Starting</h4>
+                        <div class="solution">
+                            <p><strong>Symptoms:</strong> Connection refused, server not responding</p>
+                            <p><strong>Solutions:</strong></p>
+                            <ul>
+                                <li>Check if Ollama is installed: <code>ollama --version</code></li>
+                                <li>Start Ollama server: <code>ollama serve</code></li>
+                                <li>Check if port 11434 is available: <code>netstat -tlnp | grep 11434</code></li>
+                                <li>Verify firewall settings allow connections on port 11434</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="issue-item">
+                        <h4>🔸 Model Loading Failures</h4>
+                        <div class="solution">
+                            <p><strong>Symptoms:</strong> "Model not found", "Failed to load model"</p>
+                            <p><strong>Solutions:</strong></p>
+                            <ul>
+                                <li>List available models: <code>ollama list</code></li>
+                                <li>Pull a model if missing: <code>ollama pull llama2</code></li>
+                                <li>Check available disk space for model downloads</li>
+                                <li>Verify model name spelling and availability</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="issue-item">
+                        <h4>🔸 Memory Issues</h4>
+                        <div class="solution">
+                            <p><strong>Symptoms:</strong> Out of memory errors, slow performance</p>
+                            <p><strong>Solutions:</strong></p>
+                            <ul>
+                                <li>Use smaller models (e.g., llama2:7b instead of llama2:70b)</li>
+                                <li>Close other memory-intensive applications</li>
+                                <li>Increase system swap space</li>
+                                <li>Consider upgrading RAM if frequently hitting limits</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="issue-item">
+                        <h4>🔸 Network Connectivity</h4>
+                        <div class="solution">
+                            <p><strong>Symptoms:</strong> Cannot reach Ollama API, timeouts</p>
+                            <p><strong>Solutions:</strong></p>
+                            <ul>
+                                <li>Test connection: <code>curl http://localhost:11434/api/version</code></li>
+                                <li>Check if Ollama is running: <code>ps aux | grep ollama</code></li>
+                                <li>Verify correct host and port configuration</li>
+                                <li>Check proxy settings if behind corporate firewall</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="troubleshooting-section">
+                    <h3>System Requirements</h3>
+                    <div class="requirements">
+                        <ul>
+                            <li><strong>Memory:</strong> Minimum 8GB RAM (16GB+ recommended for larger models)</li>
+                            <li><strong>Storage:</strong> 10GB+ free space for models</li>
+                            <li><strong>CPU:</strong> Modern multi-core processor</li>
+                            <li><strong>GPU:</strong> Optional but recommended for better performance</li>
+                            <li><strong>OS:</strong> Linux, macOS, or Windows with WSL2</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="troubleshooting-section">
+                    <h3>Useful Commands</h3>
+                    <div class="commands">
+                        <div class="command-item">
+                            <code>ollama serve</code>
+                            <span>Start the Ollama server</span>
+                        </div>
+                        <div class="command-item">
+                            <code>ollama list</code>
+                            <span>List all downloaded models</span>
+                        </div>
+                        <div class="command-item">
+                            <code>ollama pull &lt;model&gt;</code>
+                            <span>Download a specific model</span>
+                        </div>
+                        <div class="command-item">
+                            <code>ollama rm &lt;model&gt;</code>
+                            <span>Remove a downloaded model</span>
+                        </div>
+                        <div class="command-item">
+                            <code>ollama ps</code>
+                            <span>Show running models</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
