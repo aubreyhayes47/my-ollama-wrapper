@@ -223,8 +223,8 @@ class OllamaWrapperApp {
     initServerMonitoring() {
         // Set up server monitoring components
         this.setupServerMonitoring();
-        this.initializeMockData();
-        this.simulateRealTimeUpdates();
+        this.loadRealTimeData();
+        this.setupRealTimeUpdates();
     }
 
     // Set up server monitoring event handlers and state
@@ -234,48 +234,104 @@ class OllamaWrapperApp {
             window.monitoringState = {
                 autoRefreshInterval: null,
                 errorFilter: 'all',
-                mockLogs: [],
-                mockErrors: []
+                logs: [],
+                errors: [],
+                lastLogUpdate: null,
+                lastErrorUpdate: null
             };
         }
     }
 
-    // Initialize mock data for demonstration
-    initializeMockData() {
-        if (window.monitoringState.mockLogs.length === 0) {
-            window.monitoringState.mockLogs = [
-                { timestamp: new Date().toISOString(), level: 'INFO', message: 'Ollama server starting...' },
-                { timestamp: new Date(Date.now() - 1000).toISOString(), level: 'INFO', message: 'Server listening on port 11434' },
-                { timestamp: new Date(Date.now() - 2000).toISOString(), level: 'INFO', message: 'Model loading: llama2' },
-                { timestamp: new Date(Date.now() - 5000).toISOString(), level: 'SUCCESS', message: 'Model llama2 loaded successfully' },
-                { timestamp: new Date(Date.now() - 10000).toISOString(), level: 'INFO', message: 'API endpoint ready' }
-            ];
-        }
+    // Load real-time data from server
+    async loadRealTimeData() {
+        await Promise.all([
+            this.fetchServerLogs(),
+            this.fetchServerErrors()
+        ]);
+    }
 
-        if (window.monitoringState.mockErrors.length === 0) {
-            window.monitoringState.mockErrors = [
-                {
-                    timestamp: new Date(Date.now() - 300000).toISOString(),
-                    level: 'critical',
-                    title: 'Model loading failed',
-                    error: 'Failed to load model \'llama2\': insufficient memory',
-                    stack: 'ModelLoader.load() at line 45',
-                    suggestion: 'Free up system memory or use a smaller model'
-                },
-                {
-                    timestamp: new Date(Date.now() - 180000).toISOString(),
-                    level: 'warning',
-                    title: 'High memory usage',
-                    error: 'Memory usage at 85% of available RAM',
-                    stack: 'Current usage: 6.8GB / 8GB',
-                    suggestion: 'Consider closing other applications or using a smaller model'
-                }
-            ];
+    // Fetch server logs from API
+    async fetchServerLogs() {
+        try {
+            const backendUrl = 'http://localhost:5000'; // Use Flask server
+            const response = await fetch(`${backendUrl}/api/server/logs`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            if (data.success) {
+                window.monitoringState.logs = data.logs || [];
+                window.monitoringState.lastLogUpdate = new Date().toISOString();
+                this.displayLogs();
+            } else {
+                console.error('Failed to fetch logs:', data.error);
+                this.displayLogsError(data.error);
+            }
+        } catch (error) {
+            console.error('Error fetching logs:', error);
+            this.displayLogsError(error.message);
         }
+    }
 
-        // Initial display
-        this.displayLogs();
-        this.displayErrors();
+    // Fetch server errors from API
+    async fetchServerErrors() {
+        try {
+            const backendUrl = 'http://localhost:5000'; // Use Flask server
+            const response = await fetch(`${backendUrl}/api/server/errors`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            if (data.success) {
+                window.monitoringState.errors = data.errors || [];
+                window.monitoringState.lastErrorUpdate = new Date().toISOString();
+                this.displayErrors();
+            } else {
+                console.error('Failed to fetch errors:', data.error);
+                this.displayErrorsError(data.error);
+            }
+        } catch (error) {
+            console.error('Error fetching errors:', error);
+            this.displayErrorsError(error.message);
+        }
+    }
+
+    // Display error when logs can't be loaded
+    displayLogsError(errorMessage) {
+        const logsContainer = document.getElementById('serverLogs');
+        if (!logsContainer) return;
+
+        logsContainer.innerHTML = `
+            <div class="log-entry error">
+                <span class="timestamp">[${new Date().toISOString().replace('T', ' ').substring(0, 19)}]</span>
+                <span class="level">ERROR</span>
+                <span class="message">Failed to load server logs: ${errorMessage}</span>
+            </div>
+        `;
+    }
+
+    // Display error when errors can't be loaded
+    displayErrorsError(errorMessage) {
+        const errorsContainer = document.getElementById('serverErrors');
+        if (!errorsContainer) return;
+
+        errorsContainer.innerHTML = `
+            <div class="error-entry warning">
+                <div class="error-header">
+                    <span class="timestamp">[${new Date().toISOString().replace('T', ' ').substring(0, 19)}]</span>
+                    <span class="level">WARNING</span>
+                    <span class="title">Monitoring System Error</span>
+                </div>
+                <div class="error-details">
+                    <p><strong>Error:</strong> Failed to load server errors: ${errorMessage}</p>
+                    <p><strong>Suggestion:</strong> Check that the backend server is running and accessible</p>
+                </div>
+            </div>
+        `;
     }
 
     // Display logs in the UI
@@ -285,7 +341,12 @@ class OllamaWrapperApp {
 
         logsContainer.innerHTML = '';
         
-        window.monitoringState.mockLogs.forEach(log => {
+        if (!window.monitoringState.logs || window.monitoringState.logs.length === 0) {
+            logsContainer.innerHTML = '<div style="text-align: center; color: #a0aec0; padding: 40px;">No logs available</div>';
+            return;
+        }
+        
+        window.monitoringState.logs.forEach(log => {
             const logEntry = this.createLogEntry(log);
             logsContainer.appendChild(logEntry);
         });
@@ -318,8 +379,8 @@ class OllamaWrapperApp {
         errorContainer.innerHTML = '';
         
         const filteredErrors = window.monitoringState.errorFilter === 'all' 
-            ? window.monitoringState.mockErrors 
-            : window.monitoringState.mockErrors.filter(error => error.level === window.monitoringState.errorFilter);
+            ? window.monitoringState.errors 
+            : window.monitoringState.errors.filter(error => error.level === window.monitoringState.errorFilter);
         
         if (filteredErrors.length === 0) {
             errorContainer.innerHTML = '<div style="text-align: center; color: #a0aec0; padding: 40px;">No errors matching the current filter</div>';
@@ -356,39 +417,23 @@ class OllamaWrapperApp {
         return entry;
     }
 
-    // Simulate real-time updates
-    simulateRealTimeUpdates() {
-        // Add a new log entry every 15-30 seconds
-        setInterval(() => {
-            if (Math.random() < 0.3) { // 30% chance
-                const messages = [
-                    'Heartbeat check completed',
-                    'Model cache updated',
-                    'Background maintenance completed',
-                    'Client connection established',
-                    'Request processed successfully'
-                ];
-                
-                const newLog = {
-                    timestamp: new Date().toISOString(),
-                    level: ['INFO', 'SUCCESS'][Math.floor(Math.random() * 2)],
-                    message: messages[Math.floor(Math.random() * messages.length)]
-                };
-                
-                window.monitoringState.mockLogs.unshift(newLog);
-                if (window.monitoringState.mockLogs.length > 50) {
-                    window.monitoringState.mockLogs.splice(50);
-                }
-                
-                // Only update display if we're on the server tab and auto-refresh is off
-                const serverView = document.getElementById('server-view');
-                const autoRefreshEnabled = document.getElementById('autoRefresh')?.checked;
-                
-                if (serverView?.classList.contains('active') && !autoRefreshEnabled) {
-                    this.displayLogs();
-                }
+    // Set up real-time updates
+    setupRealTimeUpdates() {
+        // Refresh data every 30 seconds
+        setInterval(async () => {
+            const serverView = document.getElementById('server-view');
+            const autoRefreshEnabled = document.getElementById('autoRefresh')?.checked;
+            
+            // Only refresh automatically if we're on the server tab and auto-refresh is enabled
+            if (serverView?.classList.contains('active') && autoRefreshEnabled) {
+                await this.loadRealTimeData();
             }
-        }, 15000);
+        }, 30000);
+        
+        // Also check for updates every 5 minutes regardless of view
+        setInterval(async () => {
+            await this.loadRealTimeData();
+        }, 300000);
     }
 
     // Model Management Methods
@@ -1349,50 +1394,50 @@ function openServerTab(evt, tabName) {
     evt.currentTarget.classList.add('active');
 }
 
-function refreshLogs() {
-    if (!window.monitoringState) return;
+async function refreshLogs() {
+    if (!window.monitoringState || !window.ollamaApp) return;
     
-    // Simulate fetching new logs
-    const newLog = {
-        timestamp: new Date().toISOString(),
-        level: ['INFO', 'SUCCESS', 'WARNING'][Math.floor(Math.random() * 3)],
-        message: [
-            'Processing request from client',
-            'Model inference completed',
-            'Cache cleared successfully',
-            'New connection established',
-            'Background task completed'
-        ][Math.floor(Math.random() * 5)]
-    };
-    
-    window.monitoringState.mockLogs.unshift(newLog);
-    
-    // Keep only last 50 logs
-    if (window.monitoringState.mockLogs.length > 50) {
-        window.monitoringState.mockLogs.splice(50);
-    }
-    
-    window.ollamaApp.displayLogs();
-    
-    // Show refresh feedback
     const refreshBtn = event.target;
     const originalText = refreshBtn.textContent;
-    refreshBtn.textContent = 'Refreshed!';
-    refreshBtn.style.background = '#38a169';
+    
+    // Show loading state
+    refreshBtn.textContent = 'Refreshing...';
+    refreshBtn.disabled = true;
+    
+    try {
+        await window.ollamaApp.fetchServerLogs();
+        
+        // Show success feedback
+        refreshBtn.textContent = 'Refreshed!';
+        refreshBtn.style.background = '#38a169';
+        
+    } catch (error) {
+        // Show error feedback
+        refreshBtn.textContent = 'Error!';
+        refreshBtn.style.background = '#e53e3e';
+        console.error('Error refreshing logs:', error);
+    }
+    
     setTimeout(() => {
         refreshBtn.textContent = originalText;
         refreshBtn.style.background = '';
-    }, 1000);
+        refreshBtn.disabled = false;
+    }, 2000);
 }
 
 function clearLogs() {
-    if (confirm('Are you sure you want to clear all logs?')) {
+    if (confirm('Are you sure you want to clear the logs display?')) {
+        // Clear the local display (this doesn't clear server logs, just the UI)
+        window.monitoringState.logs = [];
+        window.ollamaApp.displayLogs();
+        
+        // Add a clear notification
         const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
         document.getElementById('serverLogs').innerHTML = `
             <div class="log-entry info">
                 <span class="timestamp">[${now}]</span>
                 <span class="level">INFO</span>
-                <span class="message">Logs cleared</span>
+                <span class="message">Logs display cleared (refresh to reload from server)</span>
             </div>
         `;
     }
@@ -1404,8 +1449,17 @@ function toggleAutoRefresh() {
     const checkbox = document.getElementById('autoRefresh');
     
     if (checkbox.checked) {
-        window.monitoringState.autoRefreshInterval = setInterval(refreshLogs, 5000); // Refresh every 5 seconds
-        console.log('Auto-refresh enabled');
+        // Refresh both logs and errors every 10 seconds when auto-refresh is enabled
+        window.monitoringState.autoRefreshInterval = setInterval(async () => {
+            if (window.ollamaApp) {
+                try {
+                    await window.ollamaApp.loadRealTimeData();
+                } catch (error) {
+                    console.error('Auto-refresh error:', error);
+                }
+            }
+        }, 10000);
+        console.log('Auto-refresh enabled (10 second interval)');
     } else {
         if (window.monitoringState.autoRefreshInterval) {
             clearInterval(window.monitoringState.autoRefreshInterval);
@@ -1415,57 +1469,45 @@ function toggleAutoRefresh() {
     }
 }
 
-function refreshErrors() {
-    if (!window.monitoringState) return;
+async function refreshErrors() {
+    if (!window.monitoringState || !window.ollamaApp) return;
     
-    // Simulate checking for new errors
-    const possibleNewErrors = [
-        {
-            timestamp: new Date().toISOString(),
-            level: 'warning',
-            title: 'Slow response time',
-            error: 'API response time exceeded 5 seconds',
-            stack: 'ResponseHandler.process() at line 89',
-            suggestion: 'Check server load and consider using a smaller model'
-        },
-        {
-            timestamp: new Date().toISOString(),
-            level: 'error',
-            title: 'Rate limit exceeded',
-            error: 'Too many requests in the last minute',
-            stack: 'RateLimiter.check() at line 23',
-            suggestion: 'Reduce request frequency or increase rate limits'
-        }
-    ];
-    
-    // Randomly add a new error (30% chance)
-    if (Math.random() < 0.3) {
-        const newError = possibleNewErrors[Math.floor(Math.random() * possibleNewErrors.length)];
-        window.monitoringState.mockErrors.unshift(newError);
-        
-        // Keep only last 20 errors
-        if (window.monitoringState.mockErrors.length > 20) {
-            window.monitoringState.mockErrors.splice(20);
-        }
-    }
-    
-    window.ollamaApp.displayErrors();
-    
-    // Show refresh feedback
     const refreshBtn = event.target;
     const originalText = refreshBtn.textContent;
-    refreshBtn.textContent = 'Refreshed!';
-    refreshBtn.style.background = '#38a169';
+    
+    // Show loading state
+    refreshBtn.textContent = 'Refreshing...';
+    refreshBtn.disabled = true;
+    
+    try {
+        await window.ollamaApp.fetchServerErrors();
+        
+        // Show success feedback
+        refreshBtn.textContent = 'Refreshed!';
+        refreshBtn.style.background = '#38a169';
+        
+    } catch (error) {
+        // Show error feedback
+        refreshBtn.textContent = 'Error!';
+        refreshBtn.style.background = '#e53e3e';
+        console.error('Error refreshing errors:', error);
+    }
+    
     setTimeout(() => {
         refreshBtn.textContent = originalText;
         refreshBtn.style.background = '';
-    }, 1000);
+        refreshBtn.disabled = false;
+    }, 2000);
 }
 
 function clearErrors() {
-    if (confirm('Are you sure you want to clear all errors?')) {
-        window.monitoringState.mockErrors.length = 0;
-        document.getElementById('errorList').innerHTML = '<div style="text-align: center; color: #a0aec0; padding: 40px;">No errors to display</div>';
+    if (confirm('Are you sure you want to clear the errors display?')) {
+        // Clear the local display (this doesn't clear server errors, just the UI)
+        window.monitoringState.errors = [];
+        window.ollamaApp.displayErrors();
+        
+        // Show no errors message
+        document.getElementById('errorList').innerHTML = '<div style="text-align: center; color: #a0aec0; padding: 40px;">Errors display cleared (refresh to reload from server)</div>';
     }
 }
 
