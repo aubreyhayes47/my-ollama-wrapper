@@ -84,6 +84,7 @@ cd my-ollama-wrapper
 3. Navigate through the sidebar:
    - **Models**: View and manage your installed models
    - **Server**: Monitor server logs, errors, and get troubleshooting guidance
+
    - **Settings**: Configure server settings and app preferences
    - **About**: View application information
 
@@ -125,6 +126,7 @@ cd my-ollama-wrapper
 - **Interactive Controls**: Refresh, clear, and filter functionality
 - **System Requirements**: Hardware and software specifications
 - **Command Reference**: Quick access to useful Ollama commands
+
 
 ## API Endpoints (Flask App)
 

@@ -177,10 +177,10 @@ class OllamaWrapperApp {
 
     initServerView() {
         // Initialize server view functionality
-        console.log('Server view initialized');
-        
+        console.log('Server view initialized');        
         // Initialize monitoring functionality
         this.initServerMonitoring();
+
     }
 
     initSettingsView() {
@@ -366,6 +366,7 @@ class OllamaWrapperApp {
             }
         }, 15000);
     }
+
 }
 
 // Settings manager for configuration and preferences
